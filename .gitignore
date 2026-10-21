@@ -1,0 +1,4 @@
+artifacts/
+openwrt/
+*.bin
+*.ubi
