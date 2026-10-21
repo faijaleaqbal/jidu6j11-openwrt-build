@@ -1,0 +1,8 @@
+# Shell scripts and the feature overlay MUST be LF on the target.
+# A stray CR breaks busybox ash on the router with a confusing error,
+# and breaks `sh script` outright.
+*.sh text eol=lf
+files/** text eol=lf
+tests/*.py text eol=lf
+*.yml text eol=lf
+*.md text eol=lf
