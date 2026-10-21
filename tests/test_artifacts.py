@@ -87,16 +87,20 @@ def parse_fdt(blob: bytes) -> dict:
         if tok == 1:  # BEGIN_NODE
             name = sd[p:sd.index(b"\x00", p)].decode("utf-8", "replace")
             p += (len(name) + 1 + 3) // 4 * 4
-            path.append(name)
-            tree.setdefault("/".join(path), {})
+            if name:
+                path.append(name)
+            # The root node has an empty name; key it as "/" so callers
+            # can look up tree["/"]["model"] and friends.
+            tree.setdefault("/" + "/".join(path), {})
         elif tok == 2:  # END_NODE
-            path.pop()
+            if path:
+                path.pop()
         elif tok == 3:  # PROP
             ln, noff = struct.unpack(">II", sd[p:p + 8])
             p += 8
             val = sd[p:p + ln]
             p += (ln + 3) // 4 * 4
-            tree.setdefault("/".join(path), {})[s(noff)] = val
+            tree.setdefault("/" + "/".join(path), {})[s(noff)] = val
         elif tok == 9:  # END
             break
     return tree
@@ -123,6 +127,41 @@ def _fdt_candidates(blob: bytes):
         except Exception:
             pass
         off = i + 4
+
+
+def ubi_reassemble(blob: bytes) -> bytes:
+    """Strip UBI PEB headers and return the concatenated volume data.
+
+    A UBI image interleaves erase-counter/VID headers with the payload:
+    every 128 KiB PEB starts with a 0x1000-byte header region, so the
+    payload is fragmented. Searching the raw file for a device tree
+    therefore finds only fragments and mis-parses. Reassembling first
+    gives back the contiguous FIT.
+    """
+    occ = []
+    off = 0
+    while True:
+        i = blob.find(b"UBI#", off)
+        if i < 0:
+            break
+        occ.append(i)
+        off = i + 1
+    if len(occ) < 2:
+        return blob
+    peb = occ[1] - occ[0]
+    out = bytearray()
+    for k in range(len(blob) // peb):
+        b0 = k * peb
+        if blob[b0:b0 + 4] != b"UBI#":
+            continue
+        (vho,) = struct.unpack(">I", blob[b0 + 0x10:b0 + 0x14])
+        (do,) = struct.unpack(">I", blob[b0 + 0x14:b0 + 0x18])
+        (vol_id,) = struct.unpack(">I", blob[b0 + vho + 8:b0 + vho + 12])
+        if vol_id == 0x7FFFFFFF:
+            # the internal layout volume - not payload
+            continue
+        out += blob[b0 + do:b0 + peb]
+    return bytes(out)
 
 
 def find_board_fdt(blob: bytes, needle: str, strict: bool = True) -> bytes | None:
@@ -278,14 +317,33 @@ def test_ubi() -> None:
     check(g, "volume table contains a 'kernel' volume", b"kernel" in vt,
           vt[:64].hex())
 
-    # The UBI must actually carry the FIT that boots the router.
-    fdt = find_board_fdt(blob, "jiorouter,ax6000-jidu6j11-6111")
+    # The UBI must actually carry the FIT that boots the router. The
+    # payload is fragmented across PEBs, so reassemble it first.
+    payload = ubi_reassemble(blob)
+    check(g, "reassembled payload is large enough", len(payload) > 1_000_000,
+          str(len(payload)))
+
+    fdt = find_board_fdt(payload, "jiorouter,ax6000-jidu6j11-6111")
     if check(g, "the UBI embeds the 6111 device tree", fdt is not None):
         assert fdt is not None
         tree = parse_fdt(fdt)
         compat = tree.get("/", {}).get("compatible", b"").decode("utf-8", "replace")
         check(g, "the embedded device tree targets the 6111",
               "jiorouter,ax6000-jidu6j11-6111" in compat, compat)
+        model = tree.get("/", {}).get("model", b"").decode("utf-8", "replace").strip("\x00")
+        check(g, "the embedded model names the 6111", "6111" in model, model)
+
+    # The factory UBI and the initramfs ITB must carry the SAME kernel.
+    # If they diverge, one of them was built from a different tree.
+    itb_path = art(ITB)
+    if os.path.isfile(itb_path):
+        itb = read(itb_path)
+        f = payload.find(b"\xd0\x0d\xfe\xed")
+        if check(g, "the UBI payload starts with a FIT", f >= 0):
+            (tot,) = struct.unpack(">I", payload[f + 4:f + 8])
+            check(g, "the UBI FIT matches the initramfs ITB byte for byte",
+                  payload[f:f + tot] == itb,
+                  f"ubi FIT {tot} bytes vs itb {len(itb)} bytes")
 
 
 def test_metadata() -> None:

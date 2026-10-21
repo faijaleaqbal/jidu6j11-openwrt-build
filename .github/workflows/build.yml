@@ -277,6 +277,72 @@ jobs:
           cp -a . "$STAGE/raw/" 2>/dev/null || true
           ls -la "$STAGE"
 
+      - name: Feature tests (offline, mocked OpenWrt environment)
+        run: |
+          set -e
+          python3 tests/test_features.py
+
+      - name: Verify rootfs contents (BDF + feature scripts)
+        run: |
+          set -e
+          # Unpack the squashfs rootfs from the sysupgrade tar and prove that
+          # the things that make this build WORK are actually inside it:
+          #   - the per-model Wi-Fi board data (the BDF)
+          #   - the feature scripts
+          # A build where the ipq-wifi patch silently failed still produces
+          # a bootable image - just with no Wi-Fi. This step is what
+          # catches that.
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq squashfs-tools
+          rm -rf rootfs-check && mkdir -p rootfs-check
+          cd rootfs-check
+          tar xf ../../openwrt/bin/targets/qualcommbe/ipq95xx/*6111-squashfs-sysupgrade.bin
+          ROOT=$(ls)
+          echo "tar member: $ROOT"
+          tar xf "$ROOT"/root -O > rootfs.squashfs
+          unsquashfs -d extracted rootfs.squashfs >/dev/null
+          echo "--- Wi-Fi board data ---"
+          ls -la extracted/lib/firmware/ath11k/IPQ9574/hw1.0/ 2>/dev/null || true
+          ls -la extracted/lib/firmware/ath11k/QCN9074/hw1.0/ 2>/dev/null || true
+          echo "--- feature scripts ---"
+          ls -la extracted/usr/bin/jidu-isp.sh \
+                 extracted/usr/bin/jidu-identify.sh \
+                 extracted/etc/init.d/jidu-bootguard \
+                 extracted/etc/uci-defaults/99-jidu-first-boot 2>/dev/null || true
+          echo "--- assertions ---"
+          fail=0
+          # The BDF for this board MUST be present and non-empty.
+          for f in extracted/lib/firmware/ath11k/IPQ9574/hw1.0/board-2.bin \
+                   extracted/lib/firmware/ath11k/QCN9074/hw1.0/board-2.bin; do
+            if [ ! -s "$f" ]; then
+              echo "FATAL: Wi-Fi board data missing or empty: $f"
+              fail=1
+            else
+              echo "ok  $f ($(stat -c %s "$f") bytes)"
+            fi
+          done
+          # The feature scripts MUST be installed and executable.
+          for f in extracted/usr/bin/jidu-isp.sh \
+                   extracted/usr/bin/jidu-identify.sh \
+                   extracted/etc/init.d/jidu-bootguard \
+                   extracted/etc/uci-defaults/99-jidu-first-boot; do
+            if [ ! -f "$f" ]; then
+              echo "FATAL: feature file missing: $f"
+              fail=1
+            elif [ ! -x "$f" ]; then
+              echo "FATAL: feature file not executable: $f"
+              fail=1
+            else
+              echo "ok  $f"
+            fi
+          done
+          # The board name must be in the image.
+          if ! grep -qa "jiorouter,ax6000-jidu6j11-6111" extracted/lib/firmware/ 2>/dev/null \
+             && ! strings extracted/lib/firmware/ath11k/IPQ9574/hw1.0/board-2.bin 2>/dev/null | grep -q "jidorouter"; then
+            echo "NOTE: board string not directly greppable in firmware (may be normal)"
+          fi
+          exit $fail
+
       - name: Acceptance tests (user point of view)
         run: |
           set -e

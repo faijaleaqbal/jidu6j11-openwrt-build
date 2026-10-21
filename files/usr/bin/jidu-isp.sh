@@ -89,7 +89,13 @@ apply() {
 	uci commit network
 	uci commit firewall
 	uci commit wireless
-	/etc/init.d/network restart
+	# Restart the network stack. On a minimal initramfs there may be no
+	# /etc/init.d/network (or it may fail); the config is already
+	# committed, so a failure here must not abort the script.
+	if [ -x /etc/init.d/network ]; then
+		/etc/init.d/network restart >/dev/null 2>&1 || \
+			(ubus call network reload >/dev/null 2>&1 || true)
+	fi
 }
 
 case "$MODE" in

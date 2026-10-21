@@ -4,3 +4,7 @@ openwrt/
 *.ubi
 logs*.zip
 run39660694626.zip
+base-artifacts/
+base-artifacts.zip
+rootfs-check/
+rootfs.tar

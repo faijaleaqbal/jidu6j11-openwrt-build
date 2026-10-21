@@ -9,6 +9,16 @@
 # side by side with the build's expectations.
 #
 # Read-only. Touches nothing.
+#
+# The system paths are overridable so the report can be exercised in a
+# test harness; on the router they take their normal values.
+
+PROC="${JIDU_PROC:-/proc}"
+SYS="${JIDU_SYS:-/sys}"
+FIRMWARE="${JIDU_FIRMWARE:-/lib/firmware/ath11k}"
+RELEASE="${JIDU_RELEASE:-/etc/openwrt_release}"
+VERSION="${JIDU_VERSION:-/etc/openwrt_version}"
+BOARDJSON="${JIDU_BOARDJSON:-/etc/board.json}"
 
 echo "=============================================="
 echo " JIDU hardware identity"
@@ -16,48 +26,48 @@ echo "=============================================="
 
 echo
 echo "--- model / SoC ---"
-if [ -r /proc/device-tree/model ]; then
-	tr -d '\0' < /proc/device-tree/model; echo
+if [ -r "$PROC/device-tree/model" ]; then
+	tr -d '\0' < "$PROC/device-tree/model"; echo
 else
 	echo "model: (no device tree)"
 fi
-if [ -r /proc/device-tree/compatible ]; then
-	tr '\0' '\n' < /proc/device-tree/compatible | sed 's/^/  compatible: /'
+if [ -r "$PROC/device-tree/compatible" ]; then
+	tr '\0' '\n' < "$PROC/device-tree/compatible" | sed 's/^/  compatible: /'
 fi
-if [ -r /proc/cpuinfo ]; then
-	echo "  cpu: $(grep -m1 -E '^(processor|model name|Hardware)' /proc/cpuinfo | cut -d: -f2- | sed 's/^ *//')"
+if [ -r "$PROC/cpuinfo" ]; then
+	echo "  cpu: $(grep -m1 -E '^(processor|model name|Hardware)' "$PROC/cpuinfo" | cut -d: -f2- | sed 's/^ *//')"
 fi
 
 echo
 echo "--- memory ---"
-if [ -r /proc/meminfo ]; then
-	echo "  RAM: $(( $(grep MemTotal /proc/meminfo | awk '{print $2}') / 1024 )) MiB"
+if [ -r "$PROC/meminfo" ]; then
+	echo "  RAM: $(( $(grep MemTotal "$PROC/meminfo" | awk '{print $2}') / 1024 )) MiB"
 fi
 
 echo
-echo "--- NAND partitions (from /proc/mtd) ---"
-if [ -r /proc/mtd ]; then
-	cat /proc/mtd
+echo "--- NAND partitions (from $PROC/mtd) ---"
+if [ -r "$PROC/mtd" ]; then
+	cat "$PROC/mtd"
 else
-	echo "  (no /proc/mtd)"
+	echo "  (no $PROC/mtd)"
 fi
 
 echo
 echo "--- NAND identity ---"
-if [ -r /proc/mtd ]; then
-	echo "  total MTD size: $(awk '{s+=$2} END {printf "%.1f MiB\n", s/1048576}' /proc/mtd)"
+if [ -r "$PROC/mtd" ]; then
+	echo "  total MTD size: $(awk '{s+=$2} END {printf "%.1f MiB\n", s/1048576}' "$PROC/mtd")"
 fi
 dmesg 2>/dev/null | grep -iE 'nand|spi-nand' | head -5 | sed 's/^/  /'
 
 echo
 echo "--- active A/B slot ---"
-if [ -r /proc/cmdline ]; then
-	ACTIVE=$(grep -oE 'ubi\.mtd=[^ ]+' /proc/cmdline | cut -d= -f2)
+if [ -r "$PROC/cmdline" ]; then
+	ACTIVE=$(grep -oE 'ubi\.mtd=[^ ]+' "$PROC/cmdline" | cut -d= -f2)
 	echo "  active slot: ${ACTIVE:-<none>}"
 	case "$ACTIVE" in
 		rootfs)   echo "  idle slot:   rootfs_1" ;;
 		rootfs_1) echo "  idle slot:   rootfs" ;;
-		*)        echo "  idle slot:   (unknown - read /proc/cmdline by hand)" ;;
+		*)        echo "  idle slot:   (unknown - read $PROC/cmdline by hand)" ;;
 	esac
 fi
 
@@ -68,6 +78,7 @@ if command -v fw_printenv >/dev/null 2>&1; then
 	echo "  bootargs: $(fw_printenv -n bootargs 2>/dev/null)"
 	echo "  mtdids  : $(fw_printenv -n mtdids 2>/dev/null)"
 	echo "  mtdparts: $(fw_printenv -n mtdparts 2>/dev/null)"
+	echo "  jidu_boot_attempts: $(fw_printenv -n jidu_boot_attempts 2>/dev/null || echo '(unset)')"
 	echo "  ---"
 	fw_printenv 2>/dev/null | grep -E '^(dual_boot|ipaddr|serverip)' | sed 's/^/  /'
 else
@@ -76,7 +87,7 @@ fi
 
 echo
 echo "--- Wi-Fi calibration ---"
-for d in /lib/firmware/ath11k/IPQ9574/hw1.0 /lib/firmware/ath11k/QCN9074/hw1.0; do
+for d in "$FIRMWARE/IPQ9574/hw1.0" "$FIRMWARE/QCN9074/hw1.0"; do
 	if [ -d "$d" ]; then
 		echo "  $d:"
 		for b in "$d"/*; do
@@ -91,8 +102,8 @@ done
 
 echo
 echo "--- Wi-Fi board data (BDF) ---"
-for f in /lib/firmware/ath11k/IPQ9574/hw1.0/board-2.bin \
-         /lib/firmware/ath11k/QCN9074/hw1.0/board-2.bin; do
+for f in "$FIRMWARE/IPQ9574/hw1.0/board-2.bin" \
+         "$FIRMWARE/QCN9074/hw1.0/board-2.bin"; do
 	if [ -f "$f" ]; then
 		echo "  $f: $(stat -c %s "$f" 2>/dev/null) bytes"
 	else
@@ -103,11 +114,11 @@ done
 echo
 echo "--- MAC addresses ---"
 for d in lan wan; do
-	echo "  $d: $(cat /sys/class/net/$d/address 2>/dev/null || echo '(n/a)')"
+	echo "  $d: $(cat "$SYS/class/net/$d/address" 2>/dev/null || echo '(n/a)')"
 done
 echo "  ART partition MAC (factory):"
-if [ -r /proc/mtd ]; then
-	ART=$(grep -oE 'mtd[0-9]+: .*"(0:)?ART"' /proc/mtd | grep -oE '^mtd[0-9]+' | head -1)
+if [ -r "$PROC/mtd" ]; then
+	ART=$(grep -oE 'mtd[0-9]+: .*"(0:)?ART"' "$PROC/mtd" | grep -oE '^mtd[0-9]+' | head -1)
 	if [ -n "$ART" ]; then
 		echo "    $ART holds 0:ART"
 	else
@@ -117,14 +128,14 @@ fi
 
 echo
 echo "--- build identity ---"
-if [ -r /etc/openwrt_release ]; then
-	grep -E 'DISTRIB_|VERSION' /etc/openwrt_release | sed 's/^/  /'
+if [ -r "$RELEASE" ]; then
+	grep -E 'DISTRIB_|VERSION' "$RELEASE" | sed 's/^/  /'
 fi
-if [ -r /etc/openwrt_version ]; then
-	echo "  banner: $(cat /etc/openwrt_version)"
+if [ -r "$VERSION" ]; then
+	echo "  banner: $(cat "$VERSION")"
 fi
-if [ -r /etc/board.json ]; then
-	echo "  board model: $(sed -n 's/.*"model"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' /etc/board.json | head -1)"
+if [ -r "$BOARDJSON" ]; then
+	echo "  board model: $(sed -n 's/.*"model"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' "$BOARDJSON" | head -1)"
 fi
 
 echo

@@ -46,12 +46,27 @@ STOCK_BOOTCMD='bootipq'
 # The U-Boot env partition. On the 6j11 the platform script points
 # /etc/fw_env.config at 0:APPSBLENV. If that file is missing, we try to find
 # the partition ourselves; if we cannot, the guard stays passive.
+#
+# The paths are overridable so the decision logic can be tested off-device.
+FW_ENV_CONFIG="${JIDU_FW_ENV_CONFIG:-/etc/fw_env.config}"
+PROC_MTD="${JIDU_PROC_MTD:-/proc/mtd}"
+
+# log() - write to syslog if logger exists, otherwise to stderr.
+# A missing logger must never stop the guard from doing its job.
+log() {
+	if command -v logger >/dev/null 2>&1; then
+		log "$@"
+	else
+		echo "jidu-bootguard: $*" >&2
+	fi
+}
+
 env_partition() {
-	[ -r /etc/fw_env.config ] && return 0
+	[ -r "$FW_ENV_CONFIG" ] && return 0
 	local mtd
-	mtd=$(grep -oE 'mtd[0-9]+: .*"(0:)?APPSBLENV"' /proc/mtd 2>/dev/null | grep -oE '^mtd[0-9]+' | head -1)
+	mtd=$(grep -oE 'mtd[0-9]+: .*"(0:)?APPSBLENV"' "$PROC_MTD" 2>/dev/null | grep -oE '^mtd[0-9]+' | head -1)
 	[ -n "$mtd" ] || return 1
-	echo "/dev/$mtd 0x0 0x40000 0x20000" > /etc/fw_env.config
+	echo "/dev/$mtd 0x0 0x40000 0x20000" > "$FW_ENV_CONFIG"
 	return 0
 }
 
@@ -66,7 +81,7 @@ count_attempts() {
 
 start() {
 	env_partition || {
-		logger -t jidu-bootguard "no U-Boot env partition found - guard inactive"
+		log "no U-Boot env partition found - guard inactive"
 		return 0
 	}
 
@@ -74,7 +89,7 @@ start() {
 	n=$(count_attempts)
 	n=$((n + 1))
 	fw_setenv "$VAR" "$n" 2>/dev/null
-	logger -t jidu-bootguard "boot attempt #$n (threshold $THRESHOLD)"
+	log "boot attempt #$n (threshold $THRESHOLD)"
 
 	# Nothing to do on the first attempts.
 	[ "$n" -lt "$THRESHOLD" ] && return 0
@@ -82,29 +97,40 @@ start() {
 	# We are above the threshold: try the other A/B slot first, then the
 	# stock boot command, then give up and let a human with a UART cable
 	# deal with it.
-	logger -t jidu-bootguard "boot failed $n times - attempting recovery"
+	log "boot failed $n times - attempting recovery"
 
-	if fw_setenv bootcmd 'ubi part rootfs_1; ubi read 0x46000000 kernel; bootm 0x46000000' 2>/dev/null; then
-		logger -t jidu-bootguard "pointed u-boot at the alternate slot, rebooting"
+	# The reboot is routed through a function so it can be exercised in a
+	# test harness without actually rebooting the machine.
+	# It must NOT return to the caller: if reboot somehow returns (a
+	# container, a no-op stub), continuing would overwrite the bootcmd we
+	# just set with a less good one.
+	do_reboot() {
 		sync
 		reboot
+		return 1
+	}
+
+	if fw_setenv bootcmd 'ubi part rootfs_1; ubi read 0x46000000 kernel; bootm 0x46000000' 2>/dev/null; then
+		log "pointed u-boot at the alternate slot, rebooting"
+		do_reboot
+		return 0
 	fi
 
 	if fw_setenv bootcmd "$STOCK_BOOTCMD" 2>/dev/null; then
-		logger -t jidu-bootguard "alternate slot unavailable - restored stock bootcmd, rebooting"
-		sync
-		reboot
+		log "alternate slot unavailable - restored stock bootcmd, rebooting"
+		do_reboot
+		return 0
 	fi
 
 	# Last resort: put back the exact command the platform setup wrote, so
 	# the next boot at least attempts what is known to work for this board.
 	if fw_setenv bootcmd "$CURRENT_BOOTCMD" 2>/dev/null; then
-		logger -t jidu-bootguard "restored the platform bootcmd, rebooting"
-		sync
-		reboot
+		log "restored the platform bootcmd, rebooting"
+		do_reboot
+		return 0
 	fi
 
-	logger -t jidu-bootguard "recovery failed: could not update the u-boot environment"
+	log "recovery failed: could not update the u-boot environment"
 	return 0
 }
 
@@ -113,7 +139,7 @@ stop() {
 	# cleanly; clear the counter so the next boot is not treated as failed.
 	env_partition || return 0
 	fw_setenv "$VAR" 0 2>/dev/null
-	logger -t jidu-bootguard "clean shutdown - boot counter cleared"
+	log "clean shutdown - boot counter cleared"
 }
 
 reload() {
