@@ -62,16 +62,30 @@ revision to `https://github.com/Sandiep/firmware_qca-wireless.git` at
 
 This supplies:
 
-- `board-jiorouter_ax6000-jidu6j11.ipq9574`
-- `board-jiorouter_ax6000-jidu6j11.qcn9074`
+- `board-jiorouter_ax6000-jidu6j11.ipq9574` (655 800 bytes)
+- `board-jiorouter_ax6000-jidu6j11.qcn9074` (655 800 bytes)
 
 **If this patch silently fails to apply, the build still succeeds — but the
 router boots with no Wi-Fi.** The `ipq-wifi-jiorouter_ax6000-jidu6j11`
 package's `install-overlay` globs `board-jiorouter_ax6000-jidu6j11.*`
 inside the fetched tree, and those files are absent upstream, so the
 package installs *nothing* and ships generic IPQ9574 board data instead.
-The workflow therefore greps the patched Makefile and **fails the build**
-if either the fork URL or the pinned SHA is missing.
+
+The chain that has to hold, and does:
+
+| Step | Where |
+|---|---|
+| the board is in `ALLWIFIBOARDS` | `package/firmware/ipq-wifi/Makefile` |
+| the package is generated | `$(eval $(call generate-ipq-wifi-package,jiorouter_ax6000-jidu6j11,…))` |
+| the files exist at the pinned SHA | `Sandiep/firmware_qca-wireless` @ `JIDU6J11` |
+| the suffix picks the right radio | `.ipq9574` → `ath11k/IPQ9574/hw1.0/`, `.qcn9074` → `ath11k/QCN9074/hw1.0/` |
+| the files land in the rootfs | asserted in CI by unpacking the squashfs |
+
+Guarded three ways: the workflow greps the patched Makefile and **fails
+the build** if either the fork URL or the pinned SHA is missing; a CI step
+unpacks the squashfs and asserts both `board-2.bin` files are present and
+non-empty; and the built package's version string carries the fork's
+SHA (`…~a8974a05-r2`) so a stale package is obvious.
 
 ---
 
