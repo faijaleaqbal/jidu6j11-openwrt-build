@@ -82,6 +82,40 @@ jobs:
           git --no-pager diff --stat
           git --no-pager diff package/firmware/ipq-wifi/Makefile | head -40
 
+      - name: Apply feature overlay
+        run: |
+          set -e
+          # The feature overlay (ISP switcher, identity tool, boot guard,
+          # first-boot defaults) is copied into the OpenWrt tree so it is
+          # installed into the rootfs by the normal package machinery.
+          cp -a "$GITHUB_WORKSPACE/files/." openwrt/files/
+          chmod 0755 openwrt/files/usr/bin/jidu-isp.sh \
+                      openwrt/files/usr/bin/jidu-identify.sh \
+                      openwrt/files/etc/init.d/jidu-bootguard \
+                      openwrt/files/etc/uci-defaults/99-jidu-first-boot
+          echo "--- overlay installed ---"
+          find openwrt/files -type f | sort
+
+      - name: Lint feature overlay (shellcheck)
+        run: |
+          set -e
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq shellcheck
+          echo "--- shellcheck ---"
+          # shellcheck disable=SC1091
+          shellcheck -s sh \
+            files/usr/bin/jidu-isp.sh \
+            files/usr/bin/jidu-identify.sh \
+            files/etc/init.d/jidu-bootguard \
+            files/etc/uci-defaults/99-jidu-first-boot
+          echo "shellcheck: clean"
+          echo "--- bash -n ---"
+          for f in files/usr/bin/jidu-isp.sh files/usr/bin/jidu-identify.sh \
+                   files/etc/init.d/jidu-bootguard files/etc/uci-defaults/99-jidu-first-boot; do
+            bash -n "$f"
+            echo "ok  $f"
+          done
+
       - name: Install build dependencies
         run: |
           sudo apt-get update -qq
@@ -242,6 +276,12 @@ jobs:
           # keep the raw build outputs too
           cp -a . "$STAGE/raw/" 2>/dev/null || true
           ls -la "$STAGE"
+
+      - name: Acceptance tests (user point of view)
+        run: |
+          set -e
+          python3 tests/test_artifacts.py
+        working-directory: .
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v4

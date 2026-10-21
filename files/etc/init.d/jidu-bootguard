@@ -1,0 +1,121 @@
+#!/bin/sh /etc/rc.common
+# jidu-bootguard — recover the router if the current OpenWrt fails to boot.
+#
+# Why this exists
+# ---------------
+# On the 6j11 the final sysupgrade REPLACES the stock partition table with a
+# single "ubi" partition (0xe100000 @ 0x1700000) and rewrites the U-Boot
+# environment. There is no official revert path: if the new firmware does not
+# come up, the router is unreachable over the network and needs a UART cable
+# and a serial console.
+#
+# This service gives the router a chance to rescue itself:
+#
+#   1. It writes a small "boot attempt" counter into the U-Boot environment
+#      before handing over to the network stack.
+#   2. If the system reaches a healthy state, the counter is reset to 0.
+#   3. A boot script that runs BEFORE the network is up checks the counter. If
+#      it is above the threshold, it points the bootloader back at the other
+#      A/B slot (or at the stock bootcmd) and reboots.
+#
+# That turns "bricked, needs UART" into "recovered on its own".
+#
+# Read the current state with:  fw_printenv jidu_boot_attempts
+#
+# NOTE: this is a busybox-ash init script, not strict POSIX sh. `local` is
+# used deliberately and is supported by busybox ash.
+# shellcheck disable=SC3043
+
+# shellcheck disable=SC2034  # START/STOP are read by /etc/rc.common
+START=10
+STOP=90
+
+# How many consecutive failed boots before we roll back.
+THRESHOLD="${JIDU_BOOT_GUARD_THRESHOLD:-3}"
+
+# The U-Boot variable we use for the counter.
+VAR="jidu_boot_attempts"
+
+# The U-Boot command that boots the current (OpenWrt) slot.
+# Set by the platform's jiorouter_initial_setup().
+CURRENT_BOOTCMD='ubi part ubi; ubi read 0x44000000 kernel; bootm 0x44000000'
+
+# The stock Qualcomm boot command, used as the last-resort fallback.
+STOCK_BOOTCMD='bootipq'
+
+# The U-Boot env partition. On the 6j11 the platform script points
+# /etc/fw_env.config at 0:APPSBLENV. If that file is missing, we try to find
+# the partition ourselves; if we cannot, the guard stays passive.
+env_partition() {
+	[ -r /etc/fw_env.config ] && return 0
+	local mtd
+	mtd=$(grep -oE 'mtd[0-9]+: .*"(0:)?APPSBLENV"' /proc/mtd 2>/dev/null | grep -oE '^mtd[0-9]+' | head -1)
+	[ -n "$mtd" ] || return 1
+	echo "/dev/$mtd 0x0 0x40000 0x20000" > /etc/fw_env.config
+	return 0
+}
+
+count_attempts() {
+	local n
+	n=$(fw_printenv -n "$VAR" 2>/dev/null)
+	case "$n" in
+		''|*[!0-9]*) echo 0 ;;
+		*) echo "$n" ;;
+	esac
+}
+
+start() {
+	env_partition || {
+		logger -t jidu-bootguard "no U-Boot env partition found - guard inactive"
+		return 0
+	}
+
+	local n
+	n=$(count_attempts)
+	n=$((n + 1))
+	fw_setenv "$VAR" "$n" 2>/dev/null
+	logger -t jidu-bootguard "boot attempt #$n (threshold $THRESHOLD)"
+
+	# Nothing to do on the first attempts.
+	[ "$n" -lt "$THRESHOLD" ] && return 0
+
+	# We are above the threshold: try the other A/B slot first, then the
+	# stock boot command, then give up and let a human with a UART cable
+	# deal with it.
+	logger -t jidu-bootguard "boot failed $n times - attempting recovery"
+
+	if fw_setenv bootcmd 'ubi part rootfs_1; ubi read 0x46000000 kernel; bootm 0x46000000' 2>/dev/null; then
+		logger -t jidu-bootguard "pointed u-boot at the alternate slot, rebooting"
+		sync
+		reboot
+	fi
+
+	if fw_setenv bootcmd "$STOCK_BOOTCMD" 2>/dev/null; then
+		logger -t jidu-bootguard "alternate slot unavailable - restored stock bootcmd, rebooting"
+		sync
+		reboot
+	fi
+
+	# Last resort: put back the exact command the platform setup wrote, so
+	# the next boot at least attempts what is known to work for this board.
+	if fw_setenv bootcmd "$CURRENT_BOOTCMD" 2>/dev/null; then
+		logger -t jidu-bootguard "restored the platform bootcmd, rebooting"
+		sync
+		reboot
+	fi
+
+	logger -t jidu-bootguard "recovery failed: could not update the u-boot environment"
+	return 0
+}
+
+stop() {
+	# Reaching this point means the system is alive and shutting down
+	# cleanly; clear the counter so the next boot is not treated as failed.
+	env_partition || return 0
+	fw_setenv "$VAR" 0 2>/dev/null
+	logger -t jidu-bootguard "clean shutdown - boot counter cleared"
+}
+
+reload() {
+	start
+}

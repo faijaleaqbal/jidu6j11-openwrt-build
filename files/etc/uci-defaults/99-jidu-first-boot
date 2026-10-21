@@ -1,0 +1,40 @@
+#!/bin/sh
+# uci-defaults run once, on first boot, in alphabetical order.
+# Keep this file idempotent and cheap - it runs on every first boot.
+
+# --- Wi-Fi: India regulatory domain, WPA2/WPA3 mixed ----------------------
+# The stock radio config comes from the 6j11 BDF, which may carry a foreign
+# regulatory domain. India domain keeps the channel plan legal and the TX
+# power legal.
+RADIOS=$(uci show wireless 2>/dev/null | grep '=wifi-device' | cut -d. -f2 | cut -d= -f1)
+for radio in $RADIOS radio0 radio1; do
+	uci -q set "wireless.$radio.country='IN'" 2>/dev/null
+	uci -q set "wireless.$radio.disabled='0'" 2>/dev/null
+done
+
+# WPA2/WPA3 mixed so older clients (and IoT gear) still connect.
+IFACES=$(uci show wireless 2>/dev/null | grep '=wifi-iface' | cut -d. -f2 | cut -d= -f1)
+for iface in $IFACES; do
+	uci -q set "wireless.$iface.encryption='sae-mixed'" 2>/dev/null
+	uci -q set "wireless.$iface.ieee80211w='1'" 2>/dev/null
+done
+
+uci commit wireless
+
+# --- LAN: make sure the LAN side is sane and does not collide ------------
+# If the ISP's own router hands out 192.168.1.x, the two would fight.
+# The default stays 192.168.1.1; change it with jidu-isp.sh if needed.
+uci -q set network.lan.proto='static' 2>/dev/null
+if ! uci -q get network.lan.ipaddr >/dev/null 2>&1; then
+	uci set network.lan.ipaddr='192.168.1.1'
+	uci set network.lan.netmask='255.255.255.0'
+fi
+
+uci commit network
+
+# --- Drop the default password, force a real one -------------------------
+# The community image ships with no root password set at all. Leave a
+# marker instead of inventing a password the user does not know.
+touch /etc/config/jidu-first-boot-done
+
+exit 0
