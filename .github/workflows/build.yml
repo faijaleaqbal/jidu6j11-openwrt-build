@@ -282,6 +282,11 @@ jobs:
           set -e
           python3 tests/test_features.py
 
+      - name: End-to-end smoke test (simulated first boot)
+        run: |
+          set -e
+          sh tests/smoke_test.sh
+
       - name: Verify rootfs contents (BDF + feature scripts)
         run: |
           set -e
