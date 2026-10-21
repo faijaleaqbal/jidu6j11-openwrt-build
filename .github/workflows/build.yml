@@ -299,13 +299,27 @@ jobs:
           # catches that.
           sudo apt-get update -qq
           sudo apt-get install -y -qq squashfs-tools
-          rm -rf rootfs-check && mkdir -p rootfs-check
+
+          SYSUP="$GITHUB_WORKSPACE/openwrt/bin/targets/qualcommbe/ipq95xx/openwrt-qualcommbe-ipq95xx-jiorouter_ax6000-jidu6j11-6111-squashfs-sysupgrade.bin"
+          if [ ! -f "$SYSUP" ]; then
+            echo "FATAL: sysupgrade image not found at $SYSUP"
+            exit 1
+          fi
+
+          rm -rf rootfs-check
+          mkdir -p rootfs-check
           cd rootfs-check
-          tar xf ../../openwrt/bin/targets/qualcommbe/ipq95xx/*6111-squashfs-sysupgrade.bin
-          ROOT=$(ls)
-          echo "tar member: $ROOT"
-          tar xf "$ROOT"/root -O > rootfs.squashfs
+
+          # The sysupgrade tar has one directory member: <name>/CONTROL,
+          # <name>/kernel and <name>/root. Pull the root member out.
+          # --force-local so a path that looks like "host:path" is never
+          # treated as a remote archive.
+          MEMBER=$(tar tf "$SYSUP" --force-local | grep '/root$')
+          echo "root member: $MEMBER"
+          tar xf "$SYSUP" --force-local -O "$MEMBER" > rootfs.squashfs
+          ls -la rootfs.squashfs
           unsquashfs -d extracted rootfs.squashfs >/dev/null
+
           echo "--- Wi-Fi board data ---"
           ls -la extracted/lib/firmware/ath11k/IPQ9574/hw1.0/ 2>/dev/null || true
           ls -la extracted/lib/firmware/ath11k/QCN9074/hw1.0/ 2>/dev/null || true
