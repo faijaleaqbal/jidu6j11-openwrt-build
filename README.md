@@ -349,8 +349,12 @@ The workflow:
 5. builds with `CONFIG_TARGET_PROFILE=DEVICE_jiorouter_ax6000-jidu6j11-6111`
    and **asserts** that exact profile was selected
 6. builds the factory UBI
-7. runs the acceptance-test suite against the produced artifacts
-8. publishes the artifacts and a release
+7. runs the **feature tests** (70 functional tests against a mocked OpenWrt
+   environment)
+8. unpacks the **squashfs rootfs** and asserts the Wi-Fi BDF and the feature
+   scripts are really inside it
+9. runs the **artifact acceptance tests** (66 checks on the produced files)
+10. publishes the artifacts and a release
 
 Every step that could silently produce a wrong-board image is guarded by
 an explicit assertion.
@@ -365,7 +369,9 @@ files/usr/bin/jidu-isp.sh     ISP switching (PPPoE / DHCP / static)
 files/usr/bin/jidu-identify.sh read-only hardware identity report
 files/etc/init.d/jidu-bootguard  automatic boot-failure rollback
 files/etc/uci-defaults/99-jidu-first-boot  first-boot defaults
-tests/test_artifacts.py       acceptance tests (FIT/FDT/UBI/tar parsers)
+tests/test_artifacts.py       artifact acceptance tests (FIT/FDT/UBI/tar parsers)
+tests/test_features.py        feature tests (mocked OpenWrt environment)
+docs/HARDWARE-VERIFICATION.md the checklist to run on the actual router
 ```
 
 ---
