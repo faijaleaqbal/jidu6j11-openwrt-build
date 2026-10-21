@@ -1,0 +1,70 @@
+﻿2026-10-21T21:12:09.6141121Z ##[group]Run set -e
+2026-10-21T21:12:09.6141393Z [36;1mset -e[0m
+2026-10-21T21:12:09.6141578Z [36;1mcd openwrt[0m
+2026-10-21T21:12:09.6141753Z [36;1m[0m
+2026-10-21T21:12:09.6142028Z [36;1m# 1. The JIDU Wi-Fi BDFs (board-jiorouter_ax6000-jidu6j11.{ipq9574,qcn9074})[0m
+2026-10-21T21:12:09.6142447Z [36;1m#    are NOT in upstream project/firmware/qca-wireless at the pinned[0m
+2026-10-21T21:12:09.6142818Z [36;1m#    revision. They live only in Sandiep's fork branch JIDU6J11[0m
+2026-10-21T21:12:09.6143170Z [36;1m#    (upstream PR openwrt/firmware_qca-wireless#146 was closed, not[0m
+2026-10-21T21:12:09.6143508Z [36;1m#    merged). Point the ipq-wifi package at that fork.[0m
+2026-10-21T21:12:09.6143760Z [36;1m#[0m
+2026-10-21T21:12:09.6144003Z [36;1m#    Without this the per-model board-2.bin override is silently[0m
+2026-10-21T21:12:09.6144366Z [36;1m#    empty (the install-overlay globs board-<name>.* in the fetched[0m
+2026-10-21T21:12:09.6144713Z [36;1m#    tree) and Wi-Fi falls back to the generic IPQ9574 board data.[0m
+2026-10-21T21:12:09.6145016Z [36;1msed -i \[0m
+2026-10-21T21:12:09.6145493Z [36;1m  's|^PKG_SOURCE_URL=$(PROJECT_GIT)/project/firmware/qca-wireless.git|PKG_SOURCE_URL=https://github.com/Sandiep/firmware_qca-wireless.git|' \[0m
+2026-10-21T21:12:09.6146014Z [36;1m  package/firmware/ipq-wifi/Makefile[0m
+2026-10-21T21:12:09.6146251Z [36;1msed -i \[0m
+2026-10-21T21:12:09.6146571Z [36;1m  's|^PKG_SOURCE_VERSION:=.*|PKG_SOURCE_VERSION:=a8974a05d1c6bc571a34f7e4ef858bc4689c402b|' \[0m
+2026-10-21T21:12:09.6146938Z [36;1m  package/firmware/ipq-wifi/Makefile[0m
+2026-10-21T21:12:09.6147168Z [36;1msed -i \[0m
+2026-10-21T21:12:09.6147379Z [36;1m  's|^PKG_MIRROR_HASH:=.*|PKG_MIRROR_HASH:=skip|' \[0m
+2026-10-21T21:12:09.6147656Z [36;1m  package/firmware/ipq-wifi/Makefile[0m
+2026-10-21T21:12:09.6147879Z [36;1m[0m
+2026-10-21T21:12:09.6148129Z [36;1m# 2. Verify the patch actually landed. A sed that does not match is a[0m
+2026-10-21T21:12:09.6148497Z [36;1m#    silent no-op, and the BDF would then be missing while the build[0m
+2026-10-21T21:12:09.6148790Z [36;1m#    still reports success.[0m
+2026-10-21T21:12:09.6149669Z [36;1mif ! grep -q 'Sandiep/firmware_qca-wireless' package/firmware/ipq-wifi/Makefile; then[0m
+2026-10-21T21:12:09.6150099Z [36;1m  echo "FATAL: ipq-wifi PKG_SOURCE_URL patch did not apply."[0m
+2026-10-21T21:12:09.6150525Z [36;1m  grep -n 'PKG_SOURCE_URL\|PKG_SOURCE_VERSION\|PKG_MIRROR_HASH' package/firmware/ipq-wifi/Makefile[0m
+2026-10-21T21:12:09.6150883Z [36;1m  exit 1[0m
+2026-10-21T21:12:09.6151055Z [36;1mfi[0m
+2026-10-21T21:12:09.6151376Z [36;1mif ! grep -q 'a8974a05d1c6bc571a34f7e4ef858bc4689c402b' package/firmware/ipq-wifi/Makefile; then[0m
+2026-10-21T21:12:09.6151829Z [36;1m  echo "FATAL: ipq-wifi PKG_SOURCE_VERSION patch did not apply."[0m
+2026-10-21T21:12:09.6152295Z [36;1m  exit 1[0m
+2026-10-21T21:12:09.6152466Z [36;1mfi[0m
+2026-10-21T21:12:09.6152681Z [36;1mecho "[+] ipq-wifi repointed to the JIDU BDF fork"[0m
+2026-10-21T21:12:09.6152938Z [36;1m[0m
+2026-10-21T21:12:09.6153166Z [36;1m# NOTE: no IMAGES tweak is needed for the initramfs FIT. OpenWrt[0m
+2026-10-21T21:12:09.6153528Z [36;1m# generates <profile>-initramfs-uImage.itb automatically from[0m
+2026-10-21T21:12:09.6153896Z [36;1m# Device/Build/initramfs whenever CONFIG_TARGET_ROOTFS_INITRAMFS=y[0m
+2026-10-21T21:12:09.6154214Z [36;1m# (include/image.mk). Adding an explicit[0m
+2026-10-21T21:12:09.6154538Z [36;1m# "IMAGES += squashfs-initramfs-uImage.itb" would additionally emit a[0m
+2026-10-21T21:12:09.6154935Z [36;1m# SQUASHFS-rootfs-in-RAM variant, which is the wrong image for route A.[0m
+2026-10-21T21:12:09.6155226Z [36;1m[0m
+2026-10-21T21:12:09.6155383Z [36;1m# 3. Show what we changed[0m
+2026-10-21T21:12:09.6155601Z [36;1mgit --no-pager diff --stat[0m
+2026-10-21T21:12:09.6155902Z [36;1mgit --no-pager diff package/firmware/ipq-wifi/Makefile | head -40[0m
+2026-10-21T21:12:09.6516643Z shell: /usr/bin/bash -e {0}
+2026-10-21T21:12:09.6516874Z ##[endgroup]
+2026-10-21T21:12:09.6671301Z [+] ipq-wifi repointed to the JIDU BDF fork
+2026-10-21T21:12:09.9373154Z  package/firmware/ipq-wifi/Makefile | 6 +++---
+2026-10-21T21:12:09.9373676Z  1 file changed, 3 insertions(+), 3 deletions(-)
+2026-10-21T21:12:09.9422359Z diff --git a/package/firmware/ipq-wifi/Makefile b/package/firmware/ipq-wifi/Makefile
+2026-10-21T21:12:09.9422908Z index 8b6cbb8..e41c8b8 100644
+2026-10-21T21:12:09.9423138Z --- a/package/firmware/ipq-wifi/Makefile
+2026-10-21T21:12:09.9423395Z +++ b/package/firmware/ipq-wifi/Makefile
+2026-10-21T21:12:09.9423621Z @@ -5,10 +5,10 @@ PKG_NAME:=ipq-wifi
+2026-10-21T21:12:09.9423858Z  PKG_RELEASE:=2
+2026-10-21T21:12:09.9424039Z  
+2026-10-21T21:12:09.9424241Z  PKG_SOURCE_PROTO:=git
+2026-10-21T21:12:09.9424775Z -PKG_SOURCE_URL=$(PROJECT_GIT)/project/firmware/qca-wireless.git
+2026-10-21T21:12:09.9425378Z +PKG_SOURCE_URL=https://github.com/Sandiep/firmware_qca-wireless.git
+2026-10-21T21:12:09.9425842Z  PKG_SOURCE_DATE:=2026-08-15
+2026-10-21T21:12:09.9426241Z -PKG_SOURCE_VERSION:=ec3c6fec867e891cb6f0b1ecf7f34ede8730c793
+2026-10-21T21:12:09.9426645Z -PKG_MIRROR_HASH:=d35ea28f534e2f72b51ad8295aa114fcb6ec6a2ee3a6bb499f3923f68bf04d1e
+2026-10-21T21:12:09.9427030Z +PKG_SOURCE_VERSION:=a8974a05d1c6bc571a34f7e4ef858bc4689c402b
+2026-10-21T21:12:09.9427300Z +PKG_MIRROR_HASH:=skip
+2026-10-21T21:12:09.9427492Z  PKG_FLAGS:=nonshared
+2026-10-21T21:12:09.9427663Z  
+2026-10-21T21:12:09.9427830Z  include $(INCLUDE_DIR)/package.mk

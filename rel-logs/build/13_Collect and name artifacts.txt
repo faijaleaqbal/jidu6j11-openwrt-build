@@ -1,0 +1,35 @@
+﻿2026-10-21T22:05:26.5595008Z ##[group]Run set -e
+2026-10-21T22:05:26.5595244Z [36;1mset -e[0m
+2026-10-21T22:05:26.5595436Z [36;1mOUT=bin/targets/qualcommbe/ipq95xx[0m
+2026-10-21T22:05:26.5595662Z [36;1mcd "$OUT"[0m
+2026-10-21T22:05:26.5595838Z [36;1mSTAGE=../../../../artifacts[0m
+2026-10-21T22:05:26.5596053Z [36;1mmkdir -p "$STAGE"[0m
+2026-10-21T22:05:26.5596244Z [36;1m[0m
+2026-10-21T22:05:26.5596446Z [36;1m# Canonical names the community flasher expects.[0m
+2026-10-21T22:05:26.5596925Z [36;1m# Match the 6111 profile exactly -- a loose glob could pick up a[0m
+2026-10-21T22:05:26.5597285Z [36;1m# different profile's image if more than one device were built.[0m
+2026-10-21T22:05:26.5597730Z [36;1mITB="openwrt-qualcommbe-ipq95xx-jiorouter_ax6000-jidu6j11-6111-initramfs-uImage.itb"[0m
+2026-10-21T22:05:26.5598256Z [36;1mSYS="openwrt-qualcommbe-ipq95xx-jiorouter_ax6000-jidu6j11-6111-squashfs-sysupgrade.bin"[0m
+2026-10-21T22:05:26.5598626Z [36;1mfor f in "$ITB" "$SYS"; do[0m
+2026-10-21T22:05:26.5598837Z [36;1m  if [ ! -f "$f" ]; then[0m
+2026-10-21T22:05:26.5599269Z [36;1m    echo "FATAL: expected artifact missing: $f"[0m
+2026-10-21T22:05:26.5599560Z [36;1m    ls -la[0m
+2026-10-21T22:05:26.5599748Z [36;1m    exit 1[0m
+2026-10-21T22:05:26.5599908Z [36;1m  fi[0m
+2026-10-21T22:05:26.5600063Z [36;1mdone[0m
+2026-10-21T22:05:26.5600218Z [36;1m[0m
+2026-10-21T22:05:26.5600531Z [36;1mcp "$ITB" "$STAGE/openwrt-qualcommbe-ipq95xx-jiorouter_ax6000-jidu6j11-initramfs-uImage.itb"[0m
+2026-10-21T22:05:26.5601065Z [36;1mcp "$SYS" "$STAGE/openwrt-qualcommbe-ipq95xx-jiorouter_ax6000-jidu6j11-squashfs-sysupgrade.bin"[0m
+2026-10-21T22:05:26.5601668Z [36;1mcp factory-initramfs.ubi "$STAGE/openwrt-qualcommbe-ipq95xx-jiorouter_ax6000-jidu6j11-initramfs-factory.ubi"[0m
+2026-10-21T22:05:26.5602120Z [36;1m# keep the raw build outputs too[0m
+2026-10-21T22:05:26.5602367Z [36;1mcp -a . "$STAGE/raw/" 2>/dev/null || true[0m
+2026-10-21T22:05:26.5602602Z [36;1mls -la "$STAGE"[0m
+2026-10-21T22:05:26.5658145Z shell: /usr/bin/bash -e {0}
+2026-10-21T22:05:26.5658374Z ##[endgroup]
+2026-10-21T22:05:26.6155883Z total 52824
+2026-10-21T22:05:26.6156247Z drwxr-xr-x  3 runner runner     4096 Oct 21 22:05 .
+2026-10-21T22:05:26.6156698Z drwxr-xr-x 22 runner runner     4096 Oct 21 22:05 ..
+2026-10-21T22:05:26.6157218Z -rw-r--r--  1 runner runner 19398656 Oct 21 22:05 openwrt-qualcommbe-ipq95xx-jiorouter_ax6000-jidu6j11-initramfs-factory.ubi
+2026-10-21T22:05:26.6157910Z -rw-r--r--  1 runner runner 18434536 Oct 21 22:05 openwrt-qualcommbe-ipq95xx-jiorouter_ax6000-jidu6j11-initramfs-uImage.itb
+2026-10-21T22:05:26.6158559Z -rw-r--r--  1 runner runner 16240936 Oct 21 22:05 openwrt-qualcommbe-ipq95xx-jiorouter_ax6000-jidu6j11-squashfs-sysupgrade.bin
+2026-10-21T22:05:26.6159080Z drwxr-xr-x  3 runner runner     4096 Oct 21 22:05 raw

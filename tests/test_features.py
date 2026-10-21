@@ -174,12 +174,25 @@ exit 0
 """
 
 
-def make_stub_dir(tmp: str) -> str:
+LOGGER_STUB = r"""#!/bin/sh
+# A `logger` stub that records the call instead of writing to syslog.
+echo "logger: $*" >> "${FAKE_LOGGER_LOG:-/dev/null}"
+exit 0
+"""
+
+
+def make_stub_dir(tmp: str, with_logger: bool = False) -> str:
     bindir = os.path.join(tmp, "bin")
     os.makedirs(bindir, exist_ok=True)
-    for name, body in (("uci", UCI_STUB),
-                       ("fw_printenv", FW_PRINTENV_STUB),
-                       ("fw_setenv", FW_SETENV_STUB)):
+    stubs = [("uci", UCI_STUB),
+             ("fw_printenv", FW_PRINTENV_STUB),
+             ("fw_setenv", FW_SETENV_STUB)]
+    if with_logger:
+        # A working `logger` forces the syslog branch of log(). Without this
+        # the branch is never taken on a host that has no logger, and a
+        # bug in it goes unnoticed until CI runs on a full Linux image.
+        stubs.append(("logger", LOGGER_STUB))
+    for name, body in stubs:
         p = os.path.join(bindir, name)
         with open(p, "w", encoding="utf-8", newline="\n") as fh:
             fh.write(body)
@@ -454,6 +467,42 @@ def test_bootguard_counter() -> None:
         check(g, "counter treats empty as 0", count("jidu_boot_attempts=\n") == "0")
 
 
+def test_bootguard_with_logger_present() -> None:
+    g = "bootguard"
+    print(f"[{g}] works when a logger IS available")
+    # This is the branch that only runs on a real Linux system. A bug here
+    # (e.g. log() calling itself) is invisible on a host without logger,
+    # and only shows up in CI. Regression guard for exactly that.
+    with tempfile.TemporaryDirectory() as tmp:
+        bindir = make_stub_dir(tmp, with_logger=True)
+        fw = os.path.join(tmp, "fw.state")
+        with open(fw, "w", encoding="utf-8") as fh:
+            fh.write("jidu_boot_attempts=0\n")
+        etc = os.path.join(tmp, "etc")
+        os.makedirs(etc, exist_ok=True)
+        envcfg = os.path.join(etc, "fw_env.config")
+        with open(envcfg, "w", encoding="utf-8") as fh:
+            fh.write("/dev/mtd0 0x0 0x40000 0x20000\n")
+        logger_log = os.path.join(tmp, "logger.log")
+
+        script = os.path.join(FILES, "etc", "init.d", "jidu-bootguard")
+        env = {**os.environ,
+               "PATH": bindir + os.pathsep + os.environ.get("PATH", ""),
+               "FAKE_FW_STATE": fw,
+               "FAKE_LOGGER_LOG": logger_log,
+               "JIDU_FW_ENV_CONFIG": envcfg,
+               "JIDU_PROC_MTD": os.path.join(tmp, "mtd")}
+        r = subprocess.run(["sh", "-c", f". '{script}'; start"],
+                           capture_output=True, text=True, env=env, timeout=30)
+        check(g, "start exits 0 (no infinite recursion)", r.returncode == 0,
+              (r.stderr or r.stdout)[-300:])
+        st = read_state(fw)
+        check(g, "the counter was incremented", st.get("jidu_boot_attempts") == "1", str(st))
+        check(g, "logger was actually called",
+              os.path.exists(logger_log) and "jidu-bootguard" in open(logger_log).read(),
+              "no logger output")
+
+
 def test_bootguard_start_increments() -> None:
     g = "bootguard"
     print(f"[{g}] start increments the counter")
@@ -670,6 +719,7 @@ def main() -> int:
         test_isp_show,
         test_identify,
         test_bootguard_counter,
+        test_bootguard_with_logger_present,
         test_bootguard_start_increments,
         test_bootguard_start_rolls_back,
         test_bootguard_stop_clears_counter,

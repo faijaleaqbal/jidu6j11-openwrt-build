@@ -1,0 +1,61 @@
+﻿2026-10-21T22:05:26.6202029Z ##[group]Run set -e
+2026-10-21T22:05:26.6202362Z [36;1mset -e[0m
+2026-10-21T22:05:26.6202663Z [36;1mpython3 tests/test_features.py[0m
+2026-10-21T22:05:26.6281442Z shell: /usr/bin/bash -e {0}
+2026-10-21T22:05:26.6281774Z ##[endgroup]
+2026-10-21T22:05:27.2953222Z feature scripts: /home/runner/work/jidu6j11-openwrt-build/jidu6j11-openwrt-build/files
+2026-10-21T22:05:27.2953578Z 
+2026-10-21T22:05:27.2953659Z [isp] pppoe
+2026-10-21T22:05:27.2953761Z 
+2026-10-21T22:05:27.2953842Z [isp] dhcp and static
+2026-10-21T22:05:27.2953960Z 
+2026-10-21T22:05:27.2954042Z [isp] custom LAN address
+2026-10-21T22:05:27.2954190Z 
+2026-10-21T22:05:27.2954316Z [isp] switching from pppoe to dhcp clears the old profile
+2026-10-21T22:05:27.2954515Z 
+2026-10-21T22:05:27.2954597Z [isp] argument validation
+2026-10-21T22:05:27.2954709Z 
+2026-10-21T22:05:27.2954820Z [isp] wan firewall zone is found by name, not by index
+2026-10-21T22:05:27.2954995Z 
+2026-10-21T22:05:27.2955061Z [isp] show
+2026-10-21T22:05:27.2955154Z 
+2026-10-21T22:05:27.2955294Z [identify] hardware identity report
+2026-10-21T22:05:27.2955440Z 
+2026-10-21T22:05:27.2955521Z [bootguard] boot attempt counter
+2026-10-21T22:05:27.2955656Z 
+2026-10-21T22:05:27.2955745Z [bootguard] start increments the counter
+2026-10-21T22:05:27.2956088Z   FAIL  [bootguard] start exits 0 -- sh: 58: Maximum function recursion depth (1000) reached
+2026-10-21T22:05:27.2956344Z 
+2026-10-21T22:05:27.2956347Z 
+2026-10-21T22:05:27.2956429Z [bootguard] rollback above the threshold
+2026-10-21T22:05:27.2956744Z   FAIL  [bootguard] start exits 0 -- sh: 58: Maximum function recursion depth (1000) reached
+2026-10-21T22:05:27.2957198Z 
+2026-10-21T22:05:27.2957386Z   FAIL  [bootguard] bootcmd points at the alternate slot -- {'jidu_boot_attempts': '3'}
+2026-10-21T22:05:27.2957752Z   FAIL  [bootguard] a reboot was requested -- no reboot log
+2026-10-21T22:05:27.2957932Z 
+2026-10-21T22:05:27.2958025Z [bootguard] clean shutdown clears the counter
+2026-10-21T22:05:27.2958354Z   FAIL  [bootguard] stop exits 0 -- sh: 58: Maximum function recursion depth (1000) reached
+2026-10-21T22:05:27.2958599Z 
+2026-10-21T22:05:27.2958602Z 
+2026-10-21T22:05:27.2958750Z [bootguard] stays passive when the env partition is unknown
+2026-10-21T22:05:27.2959418Z   FAIL  [bootguard] start exits 0 even with no env partition -- sh: 58: Maximum function recursion depth (1000) reached
+2026-10-21T22:05:27.2959794Z 
+2026-10-21T22:05:27.2959798Z 
+2026-10-21T22:05:27.2959887Z [bootguard] recovery decision logic
+2026-10-21T22:05:27.2960031Z 
+2026-10-21T22:05:27.2960116Z [firstboot] first-boot defaults
+2026-10-21T22:05:27.2960255Z 
+2026-10-21T22:05:27.2960357Z [firstboot] applies to the radios that exist
+2026-10-21T22:05:27.2960515Z 
+2026-10-21T22:05:27.2960607Z ============================================================
+2026-10-21T22:05:27.2960834Z   75 passed, 6 failed
+2026-10-21T22:05:27.2960945Z 
+2026-10-21T22:05:27.2961011Z   failures:
+2026-10-21T22:05:27.2961172Z     [bootguard] start exits 0
+2026-10-21T22:05:27.2961374Z     [bootguard] start exits 0
+2026-10-21T22:05:27.2961595Z     [bootguard] bootcmd points at the alternate slot
+2026-10-21T22:05:27.2961842Z     [bootguard] a reboot was requested
+2026-10-21T22:05:27.2962054Z     [bootguard] stop exits 0
+2026-10-21T22:05:27.2962280Z     [bootguard] start exits 0 even with no env partition
+2026-10-21T22:05:27.2962529Z ============================================================
+2026-10-21T22:05:27.3016914Z ##[error]Process completed with exit code 1.

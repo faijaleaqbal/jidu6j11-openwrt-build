@@ -55,7 +55,7 @@ PROC_MTD="${JIDU_PROC_MTD:-/proc/mtd}"
 # A missing logger must never stop the guard from doing its job.
 log() {
 	if command -v logger >/dev/null 2>&1; then
-		log "$@"
+		logger -t jidu-bootguard "$@"
 	else
 		echo "jidu-bootguard: $*" >&2
 	fi

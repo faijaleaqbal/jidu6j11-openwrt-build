@@ -1,0 +1,77 @@
+﻿2026-10-21T21:12:05.1771768Z ##[group]Run actions/checkout@v4
+2026-10-21T21:12:05.1772006Z with:
+2026-10-21T21:12:05.1772219Z   repository: Sandiep/openwrt
+2026-10-21T21:12:05.1772437Z   ref: JIDU6J11-PR
+2026-10-21T21:12:05.1772621Z   path: openwrt
+2026-10-21T21:12:05.1772796Z   fetch-depth: 1
+2026-10-21T21:12:05.1774733Z   token: ***
+2026-10-21T21:12:05.1774922Z   ssh-strict: true
+2026-10-21T21:12:05.1775103Z   ssh-user: git
+2026-10-21T21:12:05.1775287Z   persist-credentials: true
+2026-10-21T21:12:05.1775498Z   clean: true
+2026-10-21T21:12:05.1775684Z   sparse-checkout-cone-mode: true
+2026-10-21T21:12:05.1775904Z   fetch-tags: false
+2026-10-21T21:12:05.1776090Z   show-progress: true
+2026-10-21T21:12:05.1776279Z   lfs: false
+2026-10-21T21:12:05.1776445Z   submodules: false
+2026-10-21T21:12:05.1776657Z   set-safe-directory: true
+2026-10-21T21:12:05.1777075Z   allow-unsafe-pr-checkout: false
+2026-10-21T21:12:05.1777304Z ##[endgroup]
+2026-10-21T21:12:05.2442069Z Syncing repository: Sandiep/openwrt
+2026-10-21T21:12:05.2443050Z ##[group]Getting Git version info
+2026-10-21T21:12:05.2444195Z Working directory is '/home/runner/work/jidu6j11-openwrt-build/jidu6j11-openwrt-build/openwrt'
+2026-10-21T21:12:05.2471923Z [command]/usr/bin/git version
+2026-10-21T21:12:05.2537045Z git version 2.55.0
+2026-10-21T21:12:05.2553540Z ##[endgroup]
+2026-10-21T21:12:05.2563713Z Temporarily overriding HOME='/home/runner/work/_temp/31bfc47c-191c-4614-a16c-4c0fb5e4d42c' before making global git config changes
+2026-10-21T21:12:05.2564757Z Adding repository directory to the temporary git global config as a safe directory
+2026-10-21T21:12:05.2568458Z [command]/usr/bin/git config --global --add safe.directory /home/runner/work/jidu6j11-openwrt-build/jidu6j11-openwrt-build/openwrt
+2026-10-21T21:12:05.2597442Z Deleting the contents of '/home/runner/work/jidu6j11-openwrt-build/jidu6j11-openwrt-build/openwrt'
+2026-10-21T21:12:05.3816040Z ##[group]Initializing the repository
+2026-10-21T21:12:05.3820742Z [command]/usr/bin/git init /home/runner/work/jidu6j11-openwrt-build/jidu6j11-openwrt-build/openwrt
+2026-10-21T21:12:05.3864284Z hint: Using 'master' as the name for the initial branch. This default branch name
+2026-10-21T21:12:05.3865419Z hint: will change to "main" in Git 3.0. To configure the initial branch name
+2026-10-21T21:12:05.3866167Z hint: to use in all of your new repositories, which will suppress this warning,
+2026-10-21T21:12:05.3866653Z hint: call:
+2026-10-21T21:12:05.3866895Z hint:
+2026-10-21T21:12:05.3867124Z hint: 	git config --global init.defaultBranch <name>
+2026-10-21T21:12:05.3867404Z hint:
+2026-10-21T21:12:05.3867654Z hint: Names commonly chosen instead of 'master' are 'main', 'trunk' and
+2026-10-21T21:12:05.3868073Z hint: 'development'. The just-created branch can be renamed via this command:
+2026-10-21T21:12:05.3868384Z hint:
+2026-10-21T21:12:05.3868557Z hint: 	git branch -m <name>
+2026-10-21T21:12:05.3868772Z hint:
+2026-10-21T21:12:05.3869052Z hint: Disable this message with "git config set advice.defaultBranchName false"
+2026-10-21T21:12:05.3869803Z Initialized empty Git repository in /home/runner/work/jidu6j11-openwrt-build/jidu6j11-openwrt-build/openwrt/.git/
+2026-10-21T21:12:05.3874169Z [command]/usr/bin/git remote add origin https://github.com/Sandiep/openwrt
+2026-10-21T21:12:05.3906350Z ##[endgroup]
+2026-10-21T21:12:05.3906710Z ##[group]Disabling automatic garbage collection
+2026-10-21T21:12:05.3909398Z [command]/usr/bin/git config --local gc.auto 0
+2026-10-21T21:12:05.3937564Z ##[endgroup]
+2026-10-21T21:12:05.3938093Z ##[group]Setting up auth
+2026-10-21T21:12:05.3943611Z [command]/usr/bin/git config --local --name-only --get-regexp core\.sshCommand
+2026-10-21T21:12:05.3972889Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+2026-10-21T21:12:05.4160521Z [command]/usr/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+2026-10-21T21:12:05.4188761Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+2026-10-21T21:12:05.4376325Z [command]/usr/bin/git config --local --name-only --get-regexp ^includeIf\.gitdir:
+2026-10-21T21:12:05.4406085Z [command]/usr/bin/git submodule foreach --recursive git config --local --show-origin --name-only --get-regexp remote.origin.url
+2026-10-21T21:12:05.4592431Z [command]/usr/bin/git config --local http.https://github.com/.extraheader AUTHORIZATION: basic ***
+2026-10-21T21:12:05.4627573Z ##[endgroup]
+2026-10-21T21:12:05.4628102Z ##[group]Fetching the repository
+2026-10-21T21:12:05.4635838Z [command]/usr/bin/git -c protocol.version=2 fetch --no-tags --prune --no-recurse-submodules --depth=1 origin +refs/heads/JIDU6J11-PR*:refs/remotes/origin/JIDU6J11-PR* +refs/tags/JIDU6J11-PR*:refs/tags/JIDU6J11-PR*
+2026-10-21T21:12:09.0236820Z From https://github.com/Sandiep/openwrt
+2026-10-21T21:12:09.0237474Z  * [new branch]      JIDU6J11-PR -> origin/JIDU6J11-PR
+2026-10-21T21:12:09.0243217Z ##[endgroup]
+2026-10-21T21:12:09.0243732Z ##[group]Determining the checkout info
+2026-10-21T21:12:09.0248259Z [command]/usr/bin/git branch --list --remote origin/JIDU6J11-PR
+2026-10-21T21:12:09.0278465Z   origin/JIDU6J11-PR
+2026-10-21T21:12:09.0282212Z ##[endgroup]
+2026-10-21T21:12:09.0285701Z [command]/usr/bin/git sparse-checkout disable
+2026-10-21T21:12:09.0319837Z [command]/usr/bin/git config --local --unset-all extensions.worktreeConfig
+2026-10-21T21:12:09.0345625Z ##[group]Checking out the ref
+2026-10-21T21:12:09.0348955Z [command]/usr/bin/git checkout --progress --force -B JIDU6J11-PR refs/remotes/origin/JIDU6J11-PR
+2026-10-21T21:12:09.5923138Z Switched to a new branch 'JIDU6J11-PR'
+2026-10-21T21:12:09.5923663Z branch 'JIDU6J11-PR' set up to track 'origin/JIDU6J11-PR'.
+2026-10-21T21:12:09.5942488Z ##[endgroup]
+2026-10-21T21:12:09.5979594Z [command]/usr/bin/git log -1 --format=%H
+2026-10-21T21:12:09.6003318Z 5fd1685cf3dfc6d63c92e78781f8f433bc9863af

@@ -1,0 +1,478 @@
+﻿2026-10-21T21:13:32.6097025Z ##[group]Run cat > .config <<'EOF'
+2026-10-21T21:13:32.6097476Z [36;1mcat > .config <<'EOF'[0m
+2026-10-21T21:13:32.6097699Z [36;1mCONFIG_TARGET_qualcommbe=y[0m
+2026-10-21T21:13:32.6097947Z [36;1mCONFIG_TARGET_qualcommbe_ipq95xx=y[0m
+2026-10-21T21:13:32.6098291Z [36;1mCONFIG_TARGET_qualcommbe_ipq95xx_DEVICE_jiorouter_ax6000-jidu6j11-6111=y[0m
+2026-10-21T21:13:32.6098628Z [36;1mCONFIG_TARGET_ROOTFS_INITRAMFS=y[0m
+2026-10-21T21:13:32.6098867Z [36;1mCONFIG_TARGET_ROOTFS_SQUASHFS=y[0m
+2026-10-21T21:13:32.6099226Z [36;1mCONFIG_TARGET_ROOTFS_INCLUDE_KERNEL=y[0m
+2026-10-21T21:13:32.6099629Z [36;1mCONFIG_TARGET_ROOTFS_DIR=""[0m
+2026-10-21T21:13:32.6099859Z [36;1mCONFIG_PACKAGE_luci=y[0m
+2026-10-21T21:13:32.6100076Z [36;1mCONFIG_PACKAGE_luci-ssl=y[0m
+2026-10-21T21:13:32.6100308Z [36;1mCONFIG_PACKAGE_luci-app-mwan3=y[0m
+2026-10-21T21:13:32.6100573Z [36;1mCONFIG_PACKAGE_ath11k-firmware-ipq9574=y[0m
+2026-10-21T21:13:32.6100841Z [36;1mCONFIG_PACKAGE_ath11k-firmware-qcn9074=y[0m
+2026-10-21T21:13:32.6101140Z [36;1mCONFIG_PACKAGE_kmod-ath11k=y[0m
+2026-10-21T21:13:32.6101375Z [36;1mCONFIG_PACKAGE_kmod-ath11k-ahb=y[0m
+2026-10-21T21:13:32.6101614Z [36;1mCONFIG_PACKAGE_kmod-ath11k-pci=y[0m
+2026-10-21T21:13:32.6101844Z [36;1mCONFIG_PACKAGE_mwan3=y[0m
+2026-10-21T21:13:32.6102064Z [36;1mCONFIG_PACKAGE_uboot-envtools=y[0m
+2026-10-21T21:13:32.6102292Z [36;1mCONFIG_PACKAGE_block-mount=y[0m
+2026-10-21T21:13:32.6102516Z [36;1mCONFIG_PACKAGE_kmod-fs-ext4=y[0m
+2026-10-21T21:13:32.6102741Z [36;1mCONFIG_PACKAGE_kmod-fs-vfat=y[0m
+2026-10-21T21:13:32.6102963Z [36;1mCONFIG_PACKAGE_kmod-nls-cp437=y[0m
+2026-10-21T21:13:32.6103197Z [36;1mCONFIG_PACKAGE_kmod-nls-iso8859-1=y[0m
+2026-10-21T21:13:32.6103438Z [36;1mCONFIG_PACKAGE_kmod-usb3=y[0m
+2026-10-21T21:13:32.6103666Z [36;1mCONFIG_PACKAGE_kmod-usb-storage=y[0m
+2026-10-21T21:13:32.6103918Z [36;1mCONFIG_PACKAGE_luci-app-sqm-scripts=y[0m
+2026-10-21T21:13:32.6104163Z [36;1mCONFIG_PACKAGE_iperf3=y[0m
+2026-10-21T21:13:32.6104395Z [36;1mCONFIG_PACKAGE_kmod-ledtrig-netdev=y[0m
+2026-10-21T21:13:32.6104655Z [36;1mCONFIG_PACKAGE_kmod-qcom-ppe=y[0m
+2026-10-21T21:13:32.6104890Z [36;1mCONFIG_PACKAGE_kmod-usb-dwc3=y[0m
+2026-10-21T21:13:32.6105122Z [36;1mCONFIG_PACKAGE_kmod-usb-dwc3-qcom=y[0m
+2026-10-21T21:13:32.6105343Z [36;1mEOF[0m
+2026-10-21T21:13:32.6105566Z [36;1m# make defconfig expands the seed into a full config[0m
+2026-10-21T21:13:32.6105840Z [36;1mmake defconfig[0m
+2026-10-21T21:13:32.6106044Z [36;1mecho "--- resolved device ---"[0m
+2026-10-21T21:13:32.6106392Z [36;1mgrep -E 'CONFIG_TARGET_qualcommbe|CONFIG_TARGET_ROOTFS' .config | head -20[0m
+2026-10-21T21:13:32.6106711Z [36;1m[0m
+2026-10-21T21:13:32.6106965Z [36;1m# HARD ASSERT. An unknown/typo'd Kconfig symbol is silently dropped by[0m
+2026-10-21T21:13:32.6107337Z [36;1m# defconfig, and the build then defaults to the FIRST device in[0m
+2026-10-21T21:13:32.6107708Z [36;1m# TARGET_DEVICES (8devices_kiwi-dvk) -- a successful build of the[0m
+2026-10-21T21:13:32.6108013Z [36;1m# wrong board. Fail loudly instead.[0m
+2026-10-21T21:13:32.6108284Z [36;1mecho "--- asserting the selected profile ---"[0m
+2026-10-21T21:13:32.6108670Z [36;1mif ! grep -q '^CONFIG_TARGET_PROFILE="DEVICE_jiorouter_ax6000-jidu6j11-6111"$' .config; then[0m
+2026-10-21T21:13:32.6109070Z [36;1m  echo "FATAL: the 6111 device was not selected."[0m
+2026-10-21T21:13:32.6109541Z [36;1m  echo "  CONFIG_TARGET_PROFILE = $(grep '^CONFIG_TARGET_PROFILE=' .config)"[0m
+2026-10-21T21:13:32.6109877Z [36;1m  echo "  available profiles:"[0m
+2026-10-21T21:13:32.6110164Z [36;1m  grep -oE 'DEVICE_[a-z0-9_-]+' .config | sort -u | head -20[0m
+2026-10-21T21:13:32.6110443Z [36;1m  exit 1[0m
+2026-10-21T21:13:32.6110611Z [36;1mfi[0m
+2026-10-21T21:13:32.6110803Z [36;1mgrep '^CONFIG_TARGET_PROFILE=' .config[0m
+2026-10-21T21:13:32.6111087Z [36;1mgrep 'DEVICE_jiorouter_ax6000-jidu6j11-6111' .config[0m
+2026-10-21T21:13:32.6166203Z shell: /usr/bin/bash -e {0}
+2026-10-21T21:13:32.6166425Z ##[endgroup]
+2026-10-21T21:13:49.5993499Z 
+2026-10-21T21:13:51.8663344Z WARNING: Makefile 'package/feeds/packages/alsa-lib/Makefile' has a dependency on 'audio-support', which does not exist
+2026-10-21T21:13:51.8702671Z WARNING: Makefile 'package/feeds/packages/bmx7-dnsupdate/Makefile' has a dependency on 'bmx7', which does not exist
+2026-10-21T21:13:51.8703738Z WARNING: Makefile 'package/feeds/packages/bmx7-dnsupdate/Makefile' has a dependency on 'bmx7-json', which does not exist
+2026-10-21T21:13:51.8773801Z WARNING: Makefile 'package/feeds/packages/glib2/Makefile' has a dependency on 'libffi', which does not exist
+2026-10-21T21:13:51.8774722Z WARNING: Makefile 'package/feeds/packages/glib2/Makefile' has a dependency on 'libffi', which does not exist
+2026-10-21T21:13:51.8775664Z WARNING: Makefile 'package/feeds/packages/glib2/Makefile' has a build dependency on 'libffi/host', which does not exist
+2026-10-21T21:13:51.8838886Z WARNING: Makefile 'package/feeds/video/kmscon/Makefile' has a dependency on 'input-support', which does not exist
+2026-10-21T21:13:51.8847900Z WARNING: Makefile 'package/feeds/packages/libdrm/Makefile' has a dependency on 'video-support', which does not exist
+2026-10-21T21:13:51.8848926Z WARNING: Makefile 'package/feeds/packages/libevdev/Makefile' has a dependency on 'input-support', which does not exist
+2026-10-21T21:13:51.8958649Z WARNING: Makefile 'package/feeds/packages/lua-ffi/Makefile' has a dependency on 'libffi', which does not exist
+2026-10-21T21:13:51.8959738Z WARNING: Makefile 'package/feeds/packages/lua-ffi/Makefile' has a dependency on 'libffi', which does not exist
+2026-10-21T21:13:51.8960659Z WARNING: Makefile 'package/feeds/packages/lua-ffi/Makefile' has a dependency on 'libffi', which does not exist
+2026-10-21T21:13:51.8980807Z WARNING: Makefile 'package/feeds/luci/luci-app-bmx7/Makefile' has a dependency on 'bmx7', which does not exist
+2026-10-21T21:13:51.8981786Z WARNING: Makefile 'package/feeds/luci/luci-app-bmx7/Makefile' has a dependency on 'bmx7-uci-config', which does not exist
+2026-10-21T21:13:51.8982738Z WARNING: Makefile 'package/feeds/luci/luci-app-bmx7/Makefile' has a dependency on 'bmx7-json', which does not exist
+2026-10-21T21:13:51.8983692Z WARNING: Makefile 'package/feeds/luci/luci-app-bmx7/Makefile' has a dependency on 'bmx7-tun', which does not exist
+2026-10-21T21:13:51.8984624Z WARNING: Makefile 'package/feeds/luci/luci-app-bmx7/Makefile' has a dependency on 'bmx7-iwinfo', which does not exist
+2026-10-21T21:13:51.9134893Z WARNING: Makefile 'package/feeds/video/mesa/Makefile' has a dependency on 'accel-support', which does not exist
+2026-10-21T21:13:51.9135939Z WARNING: Makefile 'package/feeds/video/mesa/Makefile' has a dependency on 'accel-support', which does not exist
+2026-10-21T21:13:51.9136893Z WARNING: Makefile 'package/feeds/video/mesa/Makefile' has a dependency on 'accel-support', which does not exist
+2026-10-21T21:13:51.9137838Z WARNING: Makefile 'package/feeds/video/mesa/Makefile' has a dependency on 'accel-support', which does not exist
+2026-10-21T21:13:51.9138773Z WARNING: Makefile 'package/feeds/video/mesa/Makefile' has a dependency on 'accel-support', which does not exist
+2026-10-21T21:13:51.9139812Z WARNING: Makefile 'package/feeds/video/mesa/Makefile' has a dependency on 'accel-support', which does not exist
+2026-10-21T21:13:51.9140699Z WARNING: Makefile 'package/feeds/video/mesa/Makefile' has a dependency on 'accel-support', which does not exist
+2026-10-21T21:13:51.9141601Z WARNING: Makefile 'package/feeds/video/mesa/Makefile' has a dependency on 'accel-support', which does not exist
+2026-10-21T21:13:51.9142498Z WARNING: Makefile 'package/feeds/video/mesa/Makefile' has a dependency on 'accel-support', which does not exist
+2026-10-21T21:13:51.9143386Z WARNING: Makefile 'package/feeds/video/mesa/Makefile' has a dependency on 'accel-support', which does not exist
+2026-10-21T21:13:51.9144321Z WARNING: Makefile 'package/feeds/video/mesa/Makefile' has a dependency on 'accel-support', which does not exist
+2026-10-21T21:13:51.9145208Z WARNING: Makefile 'package/feeds/video/mesa/Makefile' has a dependency on 'accel-support', which does not exist
+2026-10-21T21:13:51.9146453Z WARNING: Makefile 'package/feeds/video/mesa/Makefile' has a dependency on 'accel-support', which does not exist
+2026-10-21T21:13:51.9147336Z WARNING: Makefile 'package/feeds/video/mesa/Makefile' has a dependency on 'accel-support', which does not exist
+2026-10-21T21:13:51.9148236Z WARNING: Makefile 'package/feeds/video/mesa/Makefile' has a dependency on 'accel-support', which does not exist
+2026-10-21T21:13:51.9149266Z WARNING: Makefile 'package/feeds/video/mesa/Makefile' has a dependency on 'accel-support', which does not exist
+2026-10-21T21:13:51.9150171Z WARNING: Makefile 'package/feeds/video/mesa/Makefile' has a dependency on 'accel-support', which does not exist
+2026-10-21T21:13:51.9151072Z WARNING: Makefile 'package/feeds/video/mesa/Makefile' has a dependency on 'accel-support', which does not exist
+2026-10-21T21:13:51.9152030Z WARNING: Makefile 'package/feeds/packages/micropython/Makefile' has a dependency on 'libffi', which does not exist
+2026-10-21T21:13:51.9152991Z WARNING: Makefile 'package/feeds/packages/micropython/Makefile' has a dependency on 'libffi', which does not exist
+2026-10-21T21:13:51.9226437Z WARNING: Makefile 'package/feeds/packages/prometheus-node-exporter-lua/Makefile' has a dependency on 'bmx7', which does not exist
+2026-10-21T21:13:51.9227611Z WARNING: Makefile 'package/feeds/packages/prometheus-node-exporter-lua/Makefile' has a dependency on 'bmx7-json', which does not exist
+2026-10-21T21:13:51.9237184Z WARNING: Makefile 'package/feeds/packages/python-cffi/Makefile' has a dependency on 'libffi', which does not exist
+2026-10-21T21:13:51.9239624Z WARNING: Makefile 'package/feeds/packages/python-cryptography/Makefile' has a build dependency on 'libffi/host', which does not exist
+2026-10-21T21:13:51.9255606Z WARNING: Makefile 'package/feeds/packages/python-pycares/Makefile' has a build dependency on 'libffi/host', which does not exist
+2026-10-21T21:13:51.9256934Z WARNING: Makefile 'package/feeds/packages/python-pynacl/Makefile' has a build dependency on 'libffi/host', which does not exist
+2026-10-21T21:13:51.9268944Z WARNING: Makefile 'package/feeds/packages/python3/Makefile' has a dependency on 'libffi', which does not exist
+2026-10-21T21:13:51.9270735Z WARNING: Makefile 'package/feeds/packages/python3/Makefile' has a build dependency on 'libffi/host', which does not exist
+2026-10-21T21:13:51.9291825Z WARNING: Makefile 'package/feeds/packages/ruby/Makefile' has a dependency on 'libffi', which does not exist
+2026-10-21T21:13:51.9298784Z WARNING: Makefile 'package/feeds/packages/sane-backends/Makefile' has a dependency on 'scanner-support', which does not exist
+2026-10-21T21:13:51.9310439Z WARNING: Makefile 'package/feeds/packages/shairport-sync/Makefile' has a dependency on 'audio-support', which does not exist
+2026-10-21T21:13:51.9311517Z WARNING: Makefile 'package/feeds/packages/shairport-sync/Makefile' has a dependency on 'audio-support', which does not exist
+2026-10-21T21:13:51.9312584Z WARNING: Makefile 'package/feeds/packages/shairport-sync/Makefile' has a dependency on 'audio-support', which does not exist
+2026-10-21T21:13:51.9348729Z WARNING: Makefile 'package/feeds/packages/tvheadend/Makefile' has a dependency on 'dvb-support', which does not exist
+2026-10-21T21:13:51.9349859Z WARNING: Makefile 'package/feeds/packages/tvheadend/Makefile' has a dependency on 'libffi', which does not exist
+2026-10-21T21:13:51.9388712Z WARNING: Makefile 'package/feeds/video/wayland/Makefile' has a dependency on 'libffi', which does not exist
+2026-10-21T21:13:51.9389832Z WARNING: Makefile 'package/feeds/video/wayland/Makefile' has a build dependency on 'libffi/host', which does not exist
+2026-10-21T21:13:51.9390813Z WARNING: Makefile 'package/feeds/video/wayland/Makefile' has a build dependency on 'libffi/host', which does not exist
+2026-10-21T21:13:54.5654934Z feeds/video/frameworks/qt5/qt5base/Config.in:18:error: recursive dependency detected!
+2026-10-21T21:13:54.5655766Z feeds/video/frameworks/qt5/qt5base/Config.in:18:	choice <choice> contains symbol PACKAGE_qt5base-gui
+2026-10-21T21:13:54.5657189Z tmp/.config-package.in:151314:	symbol PACKAGE_qt5base-gui depends on BUILD_qt5base-gui_OPENGL_OPENGLES2
+2026-10-21T21:13:54.5658045Z feeds/video/frameworks/qt5/qt5base/Config.in:23:	symbol BUILD_qt5base-gui_OPENGL_OPENGLES2 is part of choice <choice>
+2026-10-21T21:13:54.5658764Z For a resolution refer to Documentation/kbuild/kconfig-language.rst
+2026-10-21T21:13:54.5659432Z subsection "Kconfig recursive dependency limitations"
+2026-10-21T21:13:54.5659698Z 
+2026-10-21T21:13:54.5659897Z tmp/.config-package.in:105031:error: recursive dependency detected!
+2026-10-21T21:13:54.5660591Z tmp/.config-package.in:105031:	symbol PACKAGE_gstreamer1-plugins-bad depends on PACKAGE_gstreamer1-plugins-bad
+2026-10-21T21:13:54.5661281Z For a resolution refer to Documentation/kbuild/kconfig-language.rst
+2026-10-21T21:13:54.5661738Z subsection "Kconfig recursive dependency limitations"
+2026-10-21T21:13:54.5662006Z 
+2026-10-21T21:13:54.5795551Z tmp/.config-package.in:68849:error: recursive dependency detected!
+2026-10-21T21:13:54.5796263Z tmp/.config-package.in:68849:	symbol PACKAGE_luci-app-weechat depends on PACKAGE_luci-app-weechat
+2026-10-21T21:13:54.5796869Z For a resolution refer to Documentation/kbuild/kconfig-language.rst
+2026-10-21T21:13:54.5797322Z subsection "Kconfig recursive dependency limitations"
+2026-10-21T21:13:54.5797580Z 
+2026-10-21T21:13:54.5797776Z tmp/.config-package.in:135160:error: recursive dependency detected!
+2026-10-21T21:13:54.5798315Z tmp/.config-package.in:135160:	symbol PACKAGE_mpd-full depends on PACKAGE_mpd-full
+2026-10-21T21:13:54.5798877Z For a resolution refer to Documentation/kbuild/kconfig-language.rst
+2026-10-21T21:13:54.5799468Z subsection "Kconfig recursive dependency limitations"
+2026-10-21T21:13:54.5799722Z 
+2026-10-21T21:13:54.5843285Z tmp/.config-package.in:105505:error: recursive dependency detected!
+2026-10-21T21:13:54.5843977Z tmp/.config-package.in:105505:	symbol PACKAGE_gstreamer1-plugins-good depends on PACKAGE_gstreamer1-plugins-good
+2026-10-21T21:13:54.5844674Z For a resolution refer to Documentation/kbuild/kconfig-language.rst
+2026-10-21T21:13:54.5845163Z subsection "Kconfig recursive dependency limitations"
+2026-10-21T21:13:54.5845418Z 
+2026-10-21T21:13:54.5845623Z tmp/.config-package.in:18110:error: recursive dependency detected!
+2026-10-21T21:13:54.5846133Z tmp/.config-package.in:18110:	symbol PACKAGE_gzdoom depends on PACKAGE_gzdoom
+2026-10-21T21:13:54.5846667Z For a resolution refer to Documentation/kbuild/kconfig-language.rst
+2026-10-21T21:13:54.5847126Z subsection "Kconfig recursive dependency limitations"
+2026-10-21T21:13:54.5847374Z 
+2026-10-21T21:13:54.5847570Z tmp/.config-package.in:18150:error: recursive dependency detected!
+2026-10-21T21:13:54.5848068Z tmp/.config-package.in:18150:	symbol PACKAGE_vice depends on PACKAGE_vice
+2026-10-21T21:13:54.5848592Z For a resolution refer to Documentation/kbuild/kconfig-language.rst
+2026-10-21T21:13:54.5849026Z subsection "Kconfig recursive dependency limitations"
+2026-10-21T21:13:54.5849418Z 
+2026-10-21T21:13:54.5849609Z tmp/.config-package.in:65082:error: recursive dependency detected!
+2026-10-21T21:13:54.5850134Z tmp/.config-package.in:65082:	symbol PACKAGE_libsdl3 depends on PACKAGE_libsdl3
+2026-10-21T21:13:54.5850659Z For a resolution refer to Documentation/kbuild/kconfig-language.rst
+2026-10-21T21:13:54.5851092Z subsection "Kconfig recursive dependency limitations"
+2026-10-21T21:13:54.5851338Z 
+2026-10-21T21:13:54.5851517Z tmp/.config-package.in:105309:error: recursive dependency detected!
+2026-10-21T21:13:54.5852183Z tmp/.config-package.in:105309:	symbol PACKAGE_gstreamer1-plugins-base depends on PACKAGE_gstreamer1-plugins-base
+2026-10-21T21:13:54.5852849Z For a resolution refer to Documentation/kbuild/kconfig-language.rst
+2026-10-21T21:13:54.5853280Z subsection "Kconfig recursive dependency limitations"
+2026-10-21T21:13:54.5853522Z 
+2026-10-21T21:13:54.5853705Z tmp/.config-package.in:102258:error: recursive dependency detected!
+2026-10-21T21:13:54.5854248Z tmp/.config-package.in:102258:	symbol PACKAGE_gst1-libav depends on PACKAGE_gst1-libav
+2026-10-21T21:13:54.5855361Z For a resolution refer to Documentation/kbuild/kconfig-language.rst
+2026-10-21T21:13:54.5855833Z subsection "Kconfig recursive dependency limitations"
+2026-10-21T21:13:54.5856107Z 
+2026-10-21T21:13:54.5856331Z tmp/.config-package.in:151231:error: recursive dependency detected!
+2026-10-21T21:13:54.5856858Z tmp/.config-package.in:151231:	symbol PACKAGE_libgtk depends on PACKAGE_libgtk
+2026-10-21T21:13:54.5857357Z For a resolution refer to Documentation/kbuild/kconfig-language.rst
+2026-10-21T21:13:54.5857787Z subsection "Kconfig recursive dependency limitations"
+2026-10-21T21:13:54.5858030Z 
+2026-10-21T21:13:54.5858226Z tmp/.config-package.in:66406:error: recursive dependency detected!
+2026-10-21T21:13:54.5858790Z tmp/.config-package.in:66406:	symbol PACKAGE_libwpewebkit depends on PACKAGE_libwpewebkit
+2026-10-21T21:13:54.5859507Z For a resolution refer to Documentation/kbuild/kconfig-language.rst
+2026-10-21T21:13:54.5859953Z subsection "Kconfig recursive dependency limitations"
+2026-10-21T21:13:54.5860193Z 
+2026-10-21T21:13:54.5860385Z tmp/.config-package.in:65066:error: recursive dependency detected!
+2026-10-21T21:13:54.5860963Z tmp/.config-package.in:65066:	symbol PACKAGE_libsdl2-mixer depends on PACKAGE_libsdl2-mixer
+2026-10-21T21:13:54.5861526Z For a resolution refer to Documentation/kbuild/kconfig-language.rst
+2026-10-21T21:13:54.5861960Z subsection "Kconfig recursive dependency limitations"
+2026-10-21T21:13:54.5862209Z 
+2026-10-21T21:13:54.5862409Z tmp/.config-package.in:65117:error: recursive dependency detected!
+2026-10-21T21:13:54.5862937Z tmp/.config-package.in:65117:	symbol PACKAGE_libsdl3-mixer depends on PACKAGE_libsdl3-mixer
+2026-10-21T21:13:54.5863513Z For a resolution refer to Documentation/kbuild/kconfig-language.rst
+2026-10-21T21:13:54.5863949Z subsection "Kconfig recursive dependency limitations"
+2026-10-21T21:13:54.5864197Z 
+2026-10-21T21:13:54.5864377Z tmp/.config-package.in:135691:error: recursive dependency detected!
+2026-10-21T21:13:54.5864976Z tmp/.config-package.in:135691:	symbol PACKAGE_squeezelite-custom depends on SQUEEZELITE_WMA_ALAC
+2026-10-21T21:13:54.5865783Z tmp/.config-package.in:135782:	symbol SQUEEZELITE_WMA_ALAC depends on PACKAGE_squeezelite-custom
+2026-10-21T21:13:54.5866402Z For a resolution refer to Documentation/kbuild/kconfig-language.rst
+2026-10-21T21:13:54.5866860Z subsection "Kconfig recursive dependency limitations"
+2026-10-21T21:13:54.5867122Z 
+2026-10-21T21:13:54.5867323Z tmp/.config-package.in:151370:error: recursive dependency detected!
+2026-10-21T21:13:54.5868098Z tmp/.config-package.in:151370:	symbol PACKAGE_qt5base-plugin-input-evdevkeyboard depends on PACKAGE_qt5base-plugin-input-evdevkeyboard
+2026-10-21T21:13:54.5868893Z For a resolution refer to Documentation/kbuild/kconfig-language.rst
+2026-10-21T21:13:54.5869472Z subsection "Kconfig recursive dependency limitations"
+2026-10-21T21:13:54.5869724Z 
+2026-10-21T21:13:54.5869920Z tmp/.config-package.in:151426:error: recursive dependency detected!
+2026-10-21T21:13:54.5870666Z tmp/.config-package.in:151426:	symbol PACKAGE_qt5base-plugin-input-libinput depends on PACKAGE_qt5base-plugin-input-libinput
+2026-10-21T21:13:54.5871415Z For a resolution refer to Documentation/kbuild/kconfig-language.rst
+2026-10-21T21:13:54.5871830Z subsection "Kconfig recursive dependency limitations"
+2026-10-21T21:13:54.5872071Z 
+2026-10-21T21:13:54.5872252Z tmp/.config-package.in:151384:error: recursive dependency detected!
+2026-10-21T21:13:54.5872979Z tmp/.config-package.in:151384:	symbol PACKAGE_qt5base-plugin-input-evdevmouse depends on PACKAGE_qt5base-plugin-input-evdevmouse
+2026-10-21T21:13:54.5873717Z For a resolution refer to Documentation/kbuild/kconfig-language.rst
+2026-10-21T21:13:54.5874183Z subsection "Kconfig recursive dependency limitations"
+2026-10-21T21:13:54.5874431Z 
+2026-10-21T21:13:54.5874628Z tmp/.config-package.in:151398:error: recursive dependency detected!
+2026-10-21T21:13:54.5875373Z tmp/.config-package.in:151398:	symbol PACKAGE_qt5base-plugin-input-evdevtablet depends on PACKAGE_qt5base-plugin-input-evdevtablet
+2026-10-21T21:13:54.5876462Z For a resolution refer to Documentation/kbuild/kconfig-language.rst
+2026-10-21T21:13:54.5876918Z subsection "Kconfig recursive dependency limitations"
+2026-10-21T21:13:54.5877148Z 
+2026-10-21T21:13:54.5877340Z tmp/.config-package.in:151412:error: recursive dependency detected!
+2026-10-21T21:13:54.5878076Z tmp/.config-package.in:151412:	symbol PACKAGE_qt5base-plugin-input-evdevtouch depends on PACKAGE_qt5base-plugin-input-evdevtouch
+2026-10-21T21:13:54.5878813Z For a resolution refer to Documentation/kbuild/kconfig-language.rst
+2026-10-21T21:13:54.5879376Z subsection "Kconfig recursive dependency limitations"
+2026-10-21T21:13:54.5879608Z 
+2026-10-21T21:13:54.5879795Z tmp/.config-package.in:151454:error: recursive dependency detected!
+2026-10-21T21:13:54.5880533Z tmp/.config-package.in:151454:	symbol PACKAGE_qt5base-plugin-platforms-linuxfb depends on PACKAGE_qt5base-plugin-platforms-linuxfb
+2026-10-21T21:13:54.5881311Z For a resolution refer to Documentation/kbuild/kconfig-language.rst
+2026-10-21T21:13:54.5881754Z subsection "Kconfig recursive dependency limitations"
+2026-10-21T21:13:54.5882011Z 
+2026-10-21T21:13:54.5882201Z tmp/.config-package.in:151502:error: recursive dependency detected!
+2026-10-21T21:13:54.5882907Z tmp/.config-package.in:151502:	symbol PACKAGE_qt5base-plugin-platforms-vnc depends on PACKAGE_qt5base-plugin-platforms-vnc
+2026-10-21T21:13:54.5883622Z For a resolution refer to Documentation/kbuild/kconfig-language.rst
+2026-10-21T21:13:54.5884059Z subsection "Kconfig recursive dependency limitations"
+2026-10-21T21:13:54.5884306Z 
+2026-10-21T21:13:54.5884493Z tmp/.config-package.in:138933:error: recursive dependency detected!
+2026-10-21T21:13:54.5885025Z tmp/.config-package.in:138933:	symbol PACKAGE_kmscube depends on PACKAGE_kmscube
+2026-10-21T21:13:54.5885545Z For a resolution refer to Documentation/kbuild/kconfig-language.rst
+2026-10-21T21:13:54.5885974Z subsection "Kconfig recursive dependency limitations"
+2026-10-21T21:13:54.5886222Z 
+2026-10-21T21:13:54.5886404Z tmp/.config-package.in:61292:error: recursive dependency detected!
+2026-10-21T21:13:54.5886982Z tmp/.config-package.in:61292:	symbol PACKAGE_libdmapsharing depends on PACKAGE_libdmapsharing
+2026-10-21T21:13:54.5887562Z For a resolution refer to Documentation/kbuild/kconfig-language.rst
+2026-10-21T21:13:54.5887993Z subsection "Kconfig recursive dependency limitations"
+2026-10-21T21:13:54.5888236Z 
+2026-10-21T21:13:54.5888418Z tmp/.config-package.in:128776:error: recursive dependency detected!
+2026-10-21T21:13:54.5888936Z tmp/.config-package.in:128776:	symbol PACKAGE_dmapd depends on PACKAGE_dmapd
+2026-10-21T21:13:54.5889579Z For a resolution refer to Documentation/kbuild/kconfig-language.rst
+2026-10-21T21:13:54.5890018Z subsection "Kconfig recursive dependency limitations"
+2026-10-21T21:13:54.5890266Z 
+2026-10-21T21:13:54.5890447Z tmp/.config-package.in:58335:error: recursive dependency detected!
+2026-10-21T21:13:54.5890970Z tmp/.config-package.in:58335:	symbol PACKAGE_harfbuzz depends on PACKAGE_harfbuzz
+2026-10-21T21:13:54.5891514Z For a resolution refer to Documentation/kbuild/kconfig-language.rst
+2026-10-21T21:13:54.5891925Z subsection "Kconfig recursive dependency limitations"
+2026-10-21T21:13:54.5892168Z 
+2026-10-21T21:13:54.5892356Z tmp/.config-package.in:58361:error: recursive dependency detected!
+2026-10-21T21:13:54.5892869Z tmp/.config-package.in:58361:	symbol PACKAGE_libcairo depends on PACKAGE_libcairo
+2026-10-21T21:13:54.5893401Z For a resolution refer to Documentation/kbuild/kconfig-language.rst
+2026-10-21T21:13:54.5893829Z subsection "Kconfig recursive dependency limitations"
+2026-10-21T21:13:54.5894072Z 
+2026-10-21T21:13:54.5894258Z tmp/.config-package.in:58852:error: recursive dependency detected!
+2026-10-21T21:13:54.5894774Z tmp/.config-package.in:58852:	symbol PACKAGE_libpango depends on PACKAGE_libpango
+2026-10-21T21:13:54.5895315Z For a resolution refer to Documentation/kbuild/kconfig-language.rst
+2026-10-21T21:13:54.5895908Z subsection "Kconfig recursive dependency limitations"
+2026-10-21T21:13:54.5896255Z 
+2026-10-21T21:13:54.5896451Z tmp/.config-package.in:61639:error: recursive dependency detected!
+2026-10-21T21:13:54.5897145Z tmp/.config-package.in:61639:	symbol PACKAGE_libextractor-plugin-gstreamer depends on PACKAGE_libextractor-plugin-gstreamer
+2026-10-21T21:13:54.5897861Z For a resolution refer to Documentation/kbuild/kconfig-language.rst
+2026-10-21T21:13:54.5898312Z subsection "Kconfig recursive dependency limitations"
+2026-10-21T21:13:54.5898561Z 
+2026-10-21T21:13:54.5898761Z tmp/.config-package.in:105706:error: recursive dependency detected!
+2026-10-21T21:13:54.5899570Z tmp/.config-package.in:105706:	symbol PACKAGE_gstreamer1-plugins-ugly depends on PACKAGE_gstreamer1-plugins-ugly
+2026-10-21T21:13:54.5900229Z For a resolution refer to Documentation/kbuild/kconfig-language.rst
+2026-10-21T21:13:54.5900659Z subsection "Kconfig recursive dependency limitations"
+2026-10-21T21:13:54.5900929Z 
+2026-10-21T21:13:54.5901134Z tmp/.config-package.in:58502:error: recursive dependency detected!
+2026-10-21T21:13:54.5901687Z tmp/.config-package.in:58502:	symbol PACKAGE_libepoxy depends on PACKAGE_libepoxy
+2026-10-21T21:13:54.5902225Z For a resolution refer to Documentation/kbuild/kconfig-language.rst
+2026-10-21T21:13:54.5902653Z subsection "Kconfig recursive dependency limitations"
+2026-10-21T21:13:54.5902904Z 
+2026-10-21T21:13:54.5903088Z tmp/.config-package.in:143769:error: recursive dependency detected!
+2026-10-21T21:13:54.5903656Z tmp/.config-package.in:143769:	symbol PACKAGE_kmscon-mod-gl depends on PACKAGE_kmscon-mod-gl
+2026-10-21T21:13:54.5904236Z For a resolution refer to Documentation/kbuild/kconfig-language.rst
+2026-10-21T21:13:54.5904677Z subsection "Kconfig recursive dependency limitations"
+2026-10-21T21:13:54.5904922Z 
+2026-10-21T21:13:54.5905101Z tmp/.config-package.in:151439:error: recursive dependency detected!
+2026-10-21T21:13:54.5905836Z tmp/.config-package.in:151439:	symbol PACKAGE_qt5base-plugin-platforms-eglfs depends on PACKAGE_qt5base-plugin-platforms-eglfs
+2026-10-21T21:13:54.5906588Z For a resolution refer to Documentation/kbuild/kconfig-language.rst
+2026-10-21T21:13:54.5907055Z subsection "Kconfig recursive dependency limitations"
+2026-10-21T21:13:54.5907286Z 
+2026-10-21T21:13:54.5933609Z tmp/.config-package.in:151296:error: recursive dependency detected!
+2026-10-21T21:13:54.5934257Z tmp/.config-package.in:151296:	symbol PACKAGE_qt5base-examples depends on PACKAGE_qt5base-examples
+2026-10-21T21:13:54.5934863Z For a resolution refer to Documentation/kbuild/kconfig-language.rst
+2026-10-21T21:13:54.5935294Z subsection "Kconfig recursive dependency limitations"
+2026-10-21T21:13:54.5935538Z 
+2026-10-21T21:13:54.5935723Z tmp/.config-package.in:151764:error: recursive dependency detected!
+2026-10-21T21:13:54.5936297Z tmp/.config-package.in:151764:	symbol PACKAGE_qt5quick-quick depends on PACKAGE_qt5quick-quick
+2026-10-21T21:13:54.5936918Z For a resolution refer to Documentation/kbuild/kconfig-language.rst
+2026-10-21T21:13:54.5937373Z subsection "Kconfig recursive dependency limitations"
+2026-10-21T21:13:54.5937633Z 
+2026-10-21T21:13:54.5937820Z tmp/.config-package.in:151860:error: recursive dependency detected!
+2026-10-21T21:13:54.5938460Z tmp/.config-package.in:151860:	symbol PACKAGE_qt5virtualkeyboard depends on PACKAGE_qt5virtualkeyboard
+2026-10-21T21:13:54.5939261Z For a resolution refer to Documentation/kbuild/kconfig-language.rst
+2026-10-21T21:13:54.5939700Z subsection "Kconfig recursive dependency limitations"
+2026-10-21T21:13:54.5939939Z 
+2026-10-21T21:13:54.5940115Z tmp/.config-package.in:151608:error: recursive dependency detected!
+2026-10-21T21:13:54.5940875Z tmp/.config-package.in:151608:	symbol PACKAGE_qt5quick-qml-module-qtlabs-animation depends on PACKAGE_qt5quick-qml-module-qtlabs-animation
+2026-10-21T21:13:54.5941625Z For a resolution refer to Documentation/kbuild/kconfig-language.rst
+2026-10-21T21:13:54.5942045Z subsection "Kconfig recursive dependency limitations"
+2026-10-21T21:13:54.5942442Z 
+2026-10-21T21:13:54.5942624Z tmp/.config-package.in:151693:error: recursive dependency detected!
+2026-10-21T21:13:54.5943389Z tmp/.config-package.in:151693:	symbol PACKAGE_qt5quick-qml-module-qtquick depends on PACKAGE_qt5quick-qml-module-qtquick
+2026-10-21T21:13:54.5944046Z For a resolution refer to Documentation/kbuild/kconfig-language.rst
+2026-10-21T21:13:54.5944455Z subsection "Kconfig recursive dependency limitations"
+2026-10-21T21:13:54.5944692Z 
+2026-10-21T21:13:54.5944873Z tmp/.config-package.in:151347:error: recursive dependency detected!
+2026-10-21T21:13:54.5945584Z tmp/.config-package.in:151347:	symbol PACKAGE_qt5base-plugin-imageformats-ico depends on PACKAGE_qt5base-plugin-imageformats-ico
+2026-10-21T21:13:54.5946331Z For a resolution refer to Documentation/kbuild/kconfig-language.rst
+2026-10-21T21:13:54.5946779Z subsection "Kconfig recursive dependency limitations"
+2026-10-21T21:13:54.5947043Z 
+2026-10-21T21:13:54.5947239Z tmp/.config-package.in:151358:error: recursive dependency detected!
+2026-10-21T21:13:54.5948022Z tmp/.config-package.in:151358:	symbol PACKAGE_qt5base-plugin-imageformats-jpeg depends on PACKAGE_qt5base-plugin-imageformats-jpeg
+2026-10-21T21:13:54.5948787Z For a resolution refer to Documentation/kbuild/kconfig-language.rst
+2026-10-21T21:13:54.5949356Z subsection "Kconfig recursive dependency limitations"
+2026-10-21T21:13:54.5949602Z 
+2026-10-21T21:13:54.5949798Z tmp/.config-package.in:151469:error: recursive dependency detected!
+2026-10-21T21:13:54.5950554Z tmp/.config-package.in:151469:	symbol PACKAGE_qt5base-plugin-platforms-minimal depends on PACKAGE_qt5base-plugin-platforms-minimal
+2026-10-21T21:13:54.5951310Z For a resolution refer to Documentation/kbuild/kconfig-language.rst
+2026-10-21T21:13:54.5951725Z subsection "Kconfig recursive dependency limitations"
+2026-10-21T21:13:54.5951947Z 
+2026-10-21T21:13:54.5952134Z tmp/.config-package.in:151480:error: recursive dependency detected!
+2026-10-21T21:13:54.5952866Z tmp/.config-package.in:151480:	symbol PACKAGE_qt5base-plugin-platforms-minimalegl depends on PACKAGE_qt5base-plugin-platforms-minimalegl
+2026-10-21T21:13:54.5953628Z For a resolution refer to Documentation/kbuild/kconfig-language.rst
+2026-10-21T21:13:54.5954042Z subsection "Kconfig recursive dependency limitations"
+2026-10-21T21:13:54.5954271Z 
+2026-10-21T21:13:54.5954454Z tmp/.config-package.in:151491:error: recursive dependency detected!
+2026-10-21T21:13:54.5955176Z tmp/.config-package.in:151491:	symbol PACKAGE_qt5base-plugin-platforms-offscreen depends on PACKAGE_qt5base-plugin-platforms-offscreen
+2026-10-21T21:13:54.5955931Z For a resolution refer to Documentation/kbuild/kconfig-language.rst
+2026-10-21T21:13:54.5956355Z subsection "Kconfig recursive dependency limitations"
+2026-10-21T21:13:54.5956603Z 
+2026-10-21T21:13:54.5956782Z tmp/.config-package.in:151519:error: recursive dependency detected!
+2026-10-21T21:13:54.5957396Z tmp/.config-package.in:151519:	symbol PACKAGE_qt5base-printSupport depends on PACKAGE_qt5base-printSupport
+2026-10-21T21:13:54.5958029Z For a resolution refer to Documentation/kbuild/kconfig-language.rst
+2026-10-21T21:13:54.5958450Z subsection "Kconfig recursive dependency limitations"
+2026-10-21T21:13:54.5958691Z 
+2026-10-21T21:13:54.5958868Z tmp/.config-package.in:151785:error: recursive dependency detected!
+2026-10-21T21:13:54.5959592Z tmp/.config-package.in:151785:	symbol PACKAGE_qt5quick-quick-test depends on PACKAGE_qt5quick-quick-test
+2026-10-21T21:13:54.5960191Z For a resolution refer to Documentation/kbuild/kconfig-language.rst
+2026-10-21T21:13:54.5960603Z subsection "Kconfig recursive dependency limitations"
+2026-10-21T21:13:54.5960837Z 
+2026-10-21T21:13:54.5961010Z tmp/.config-package.in:151549:error: recursive dependency detected!
+2026-10-21T21:13:54.5961592Z tmp/.config-package.in:151549:	symbol PACKAGE_qt5base-widgets depends on PACKAGE_qt5base-widgets
+2026-10-21T21:13:54.5962187Z For a resolution refer to Documentation/kbuild/kconfig-language.rst
+2026-10-21T21:13:54.5962626Z subsection "Kconfig recursive dependency limitations"
+2026-10-21T21:13:54.5963011Z 
+2026-10-21T21:13:54.5963303Z tmp/.config-package.in:151808:error: recursive dependency detected!
+2026-10-21T21:13:54.5963916Z tmp/.config-package.in:151808:	symbol PACKAGE_qt5script-examples depends on PACKAGE_qt5script-examples
+2026-10-21T21:13:54.5964527Z For a resolution refer to Documentation/kbuild/kconfig-language.rst
+2026-10-21T21:13:54.5964959Z subsection "Kconfig recursive dependency limitations"
+2026-10-21T21:13:54.5965220Z 
+2026-10-21T21:13:54.5965421Z tmp/.config-package.in:151829:error: recursive dependency detected!
+2026-10-21T21:13:54.5966091Z tmp/.config-package.in:151829:	symbol PACKAGE_qt5script-scriptTools depends on PACKAGE_qt5script-scriptTools
+2026-10-21T21:13:54.5966767Z For a resolution refer to Documentation/kbuild/kconfig-language.rst
+2026-10-21T21:13:54.5967204Z subsection "Kconfig recursive dependency limitations"
+2026-10-21T21:13:54.5967462Z 
+2026-10-21T21:13:54.5967668Z tmp/.config-package.in:138999:error: recursive dependency detected!
+2026-10-21T21:13:54.5968293Z tmp/.config-package.in:138999:	symbol PACKAGE_libsdl3-tests depends on PACKAGE_libsdl3-tests
+2026-10-21T21:13:54.5968927Z For a resolution refer to Documentation/kbuild/kconfig-language.rst
+2026-10-21T21:13:54.5969490Z subsection "Kconfig recursive dependency limitations"
+2026-10-21T21:13:54.5969750Z 
+2026-10-21T21:13:54.6177948Z tmp/.config-package.in:65048:error: recursive dependency detected!
+2026-10-21T21:13:54.6178593Z tmp/.config-package.in:65048:	symbol PACKAGE_libsdl2-image depends on PACKAGE_libsdl2-image
+2026-10-21T21:13:54.6179314Z For a resolution refer to Documentation/kbuild/kconfig-language.rst
+2026-10-21T21:13:54.6179786Z subsection "Kconfig recursive dependency limitations"
+2026-10-21T21:13:54.6180027Z 
+2026-10-21T21:13:54.6180228Z tmp/.config-package.in:65101:error: recursive dependency detected!
+2026-10-21T21:13:54.6180785Z tmp/.config-package.in:65101:	symbol PACKAGE_libsdl3-image depends on PACKAGE_libsdl3-image
+2026-10-21T21:13:54.6181372Z For a resolution refer to Documentation/kbuild/kconfig-language.rst
+2026-10-21T21:13:54.6181844Z subsection "Kconfig recursive dependency limitations"
+2026-10-21T21:13:54.6182084Z 
+2026-10-21T21:13:54.6199259Z tmp/.config-package.in:18133:error: recursive dependency detected!
+2026-10-21T21:13:54.6199802Z tmp/.config-package.in:18133:	symbol PACKAGE_sdl3-doom depends on PACKAGE_sdl3-doom
+2026-10-21T21:13:54.6200332Z For a resolution refer to Documentation/kbuild/kconfig-language.rst
+2026-10-21T21:13:54.6200760Z subsection "Kconfig recursive dependency limitations"
+2026-10-21T21:13:54.6201011Z 
+2026-10-21T21:13:54.6235104Z tmp/.config-package.in:65034:error: recursive dependency detected!
+2026-10-21T21:13:54.6235724Z tmp/.config-package.in:65034:	symbol PACKAGE_libsdl2-compat depends on PACKAGE_libsdl2-compat
+2026-10-21T21:13:54.6236331Z For a resolution refer to Documentation/kbuild/kconfig-language.rst
+2026-10-21T21:13:54.6236791Z subsection "Kconfig recursive dependency limitations"
+2026-10-21T21:13:54.6237053Z 
+2026-10-21T21:13:54.6289695Z tmp/.config-package.in:67175:error: recursive dependency detected!
+2026-10-21T21:13:54.6290327Z tmp/.config-package.in:67175:	symbol PACKAGE_wpewebkit-driver depends on PACKAGE_wpewebkit-driver
+2026-10-21T21:13:54.6290959Z For a resolution refer to Documentation/kbuild/kconfig-language.rst
+2026-10-21T21:13:54.6291420Z subsection "Kconfig recursive dependency limitations"
+2026-10-21T21:13:54.6291685Z 
+2026-10-21T21:13:54.6291879Z tmp/.config-package.in:67198:error: recursive dependency detected!
+2026-10-21T21:13:54.6292534Z tmp/.config-package.in:67198:	symbol PACKAGE_wpewebkit-minibrowser depends on PACKAGE_wpewebkit-minibrowser
+2026-10-21T21:13:54.6293187Z For a resolution refer to Documentation/kbuild/kconfig-language.rst
+2026-10-21T21:13:54.6293613Z subsection "Kconfig recursive dependency limitations"
+2026-10-21T21:13:54.6293862Z 
+2026-10-21T21:13:54.6341839Z tmp/.config-package.in:138969:error: recursive dependency detected!
+2026-10-21T21:13:54.6342442Z tmp/.config-package.in:138969:	symbol PACKAGE_libgtk-demos depends on PACKAGE_libgtk-demos
+2026-10-21T21:13:54.6343572Z For a resolution refer to Documentation/kbuild/kconfig-language.rst
+2026-10-21T21:13:54.6344019Z subsection "Kconfig recursive dependency limitations"
+2026-10-21T21:13:54.6344265Z 
+2026-10-21T21:13:54.6344462Z tmp/.config-package.in:138984:error: recursive dependency detected!
+2026-10-21T21:13:54.6345013Z tmp/.config-package.in:138984:	symbol PACKAGE_libgtk-utils depends on PACKAGE_libgtk-utils
+2026-10-21T21:13:54.6345575Z For a resolution refer to Documentation/kbuild/kconfig-language.rst
+2026-10-21T21:13:54.6346022Z subsection "Kconfig recursive dependency limitations"
+2026-10-21T21:13:54.6346273Z 
+2026-10-21T21:13:54.6346466Z tmp/.config-package.in:151569:error: recursive dependency detected!
+2026-10-21T21:13:54.6347124Z tmp/.config-package.in:151569:	symbol PACKAGE_qt5graphicaleffects depends on PACKAGE_qt5graphicaleffects
+2026-10-21T21:13:54.6347770Z For a resolution refer to Documentation/kbuild/kconfig-language.rst
+2026-10-21T21:13:54.6348209Z subsection "Kconfig recursive dependency limitations"
+2026-10-21T21:13:54.6348462Z 
+2026-10-21T21:13:54.6348637Z tmp/.config-package.in:151580:error: recursive dependency detected!
+2026-10-21T21:13:54.6349394Z tmp/.config-package.in:151580:	symbol PACKAGE_qt5quick-controls2 depends on PACKAGE_qt5quick-controls2
+2026-10-21T21:13:54.6350003Z For a resolution refer to Documentation/kbuild/kconfig-language.rst
+2026-10-21T21:13:54.6350424Z subsection "Kconfig recursive dependency limitations"
+2026-10-21T21:13:54.6350665Z 
+2026-10-21T21:13:54.6350838Z tmp/.config-package.in:151646:error: recursive dependency detected!
+2026-10-21T21:13:54.6351667Z tmp/.config-package.in:151646:	symbol PACKAGE_qt5quick-qml-module-qtlabs-sharedimage depends on PACKAGE_qt5quick-qml-module-qtlabs-sharedimage
+2026-10-21T21:13:54.6352500Z For a resolution refer to Documentation/kbuild/kconfig-language.rst
+2026-10-21T21:13:54.6352949Z subsection "Kconfig recursive dependency limitations"
+2026-10-21T21:13:54.6353216Z 
+2026-10-21T21:13:54.6353402Z tmp/.config-package.in:151656:error: recursive dependency detected!
+2026-10-21T21:13:54.6354236Z tmp/.config-package.in:151656:	symbol PACKAGE_qt5quick-qml-module-qtlabs-wavefrontmesh depends on PACKAGE_qt5quick-qml-module-qtlabs-wavefrontmesh
+2026-10-21T21:13:54.6355003Z For a resolution refer to Documentation/kbuild/kconfig-language.rst
+2026-10-21T21:13:54.6355410Z subsection "Kconfig recursive dependency limitations"
+2026-10-21T21:13:54.6355644Z 
+2026-10-21T21:13:54.6355818Z tmp/.config-package.in:151704:error: recursive dependency detected!
+2026-10-21T21:13:54.6356553Z tmp/.config-package.in:151704:	symbol PACKAGE_qt5quick-qml-module-qtquick-layouts depends on PACKAGE_qt5quick-qml-module-qtquick-layouts
+2026-10-21T21:13:54.6357291Z For a resolution refer to Documentation/kbuild/kconfig-language.rst
+2026-10-21T21:13:54.6357705Z subsection "Kconfig recursive dependency limitations"
+2026-10-21T21:13:54.6357946Z 
+2026-10-21T21:13:54.6358133Z tmp/.config-package.in:151724:error: recursive dependency detected!
+2026-10-21T21:13:54.6358874Z tmp/.config-package.in:151724:	symbol PACKAGE_qt5quick-qml-module-qtquick-shapes depends on PACKAGE_qt5quick-qml-module-qtquick-shapes
+2026-10-21T21:13:54.6359725Z For a resolution refer to Documentation/kbuild/kconfig-language.rst
+2026-10-21T21:13:54.6360150Z subsection "Kconfig recursive dependency limitations"
+2026-10-21T21:13:54.6360401Z 
+2026-10-21T21:13:54.6360587Z tmp/.config-package.in:151734:error: recursive dependency detected!
+2026-10-21T21:13:54.6361333Z tmp/.config-package.in:151734:	symbol PACKAGE_qt5quick-qml-module-qtquick-window2 depends on PACKAGE_qt5quick-qml-module-qtquick-window2
+2026-10-21T21:13:54.6362117Z For a resolution refer to Documentation/kbuild/kconfig-language.rst
+2026-10-21T21:13:54.6362585Z subsection "Kconfig recursive dependency limitations"
+2026-10-21T21:13:54.6362822Z 
+2026-10-21T21:13:54.6363006Z tmp/.config-package.in:151744:error: recursive dependency detected!
+2026-10-21T21:13:54.6363669Z tmp/.config-package.in:151744:	symbol PACKAGE_qt5quick-qml-module-qttest depends on PACKAGE_qt5quick-qml-module-qttest
+2026-10-21T21:13:54.6364701Z For a resolution refer to Documentation/kbuild/kconfig-language.rst
+2026-10-21T21:13:54.6365145Z subsection "Kconfig recursive dependency limitations"
+2026-10-21T21:13:54.6368043Z 
+2026-10-21T21:13:54.6368250Z tmp/.config-package.in:151775:error: recursive dependency detected!
+2026-10-21T21:13:54.6368897Z tmp/.config-package.in:151775:	symbol PACKAGE_qt5quick-quick-shapes depends on PACKAGE_qt5quick-quick-shapes
+2026-10-21T21:13:54.6369692Z For a resolution refer to Documentation/kbuild/kconfig-language.rst
+2026-10-21T21:13:54.6370137Z subsection "Kconfig recursive dependency limitations"
+2026-10-21T21:13:54.6370384Z 
+2026-10-21T21:13:54.6370576Z tmp/.config-package.in:151797:error: recursive dependency detected!
+2026-10-21T21:13:54.6371203Z tmp/.config-package.in:151797:	symbol PACKAGE_qt5quick-quick-widgets depends on PACKAGE_qt5quick-quick-widgets
+2026-10-21T21:13:54.6371870Z For a resolution refer to Documentation/kbuild/kconfig-language.rst
+2026-10-21T21:13:54.6372341Z subsection "Kconfig recursive dependency limitations"
+2026-10-21T21:13:54.6372591Z 
+2026-10-21T21:13:54.6372773Z tmp/.config-package.in:151842:error: recursive dependency detected!
+2026-10-21T21:13:54.6373289Z tmp/.config-package.in:151842:	symbol PACKAGE_qt5svg depends on PACKAGE_qt5svg
+2026-10-21T21:13:54.6373828Z For a resolution refer to Documentation/kbuild/kconfig-language.rst
+2026-10-21T21:13:54.6374247Z subsection "Kconfig recursive dependency limitations"
+2026-10-21T21:13:54.6374482Z 
+2026-10-21T21:13:54.8680680Z #
+2026-10-21T21:13:54.8681067Z # configuration written to .config
+2026-10-21T21:13:54.8681426Z #
+2026-10-21T21:13:54.8776303Z --- resolved device ---
+2026-10-21T21:13:54.8791429Z CONFIG_TARGET_qualcommbe=y
+2026-10-21T21:13:54.8791815Z CONFIG_TARGET_qualcommbe_ipq95xx=y
+2026-10-21T21:13:54.8792214Z # CONFIG_TARGET_qualcommbe_ipq95xx_DEVICE_8devices_kiwi-dvk is not set
+2026-10-21T21:13:54.8792587Z # CONFIG_TARGET_qualcommbe_ipq95xx_DEVICE_qcom_rdp433 is not set
+2026-10-21T21:13:54.8793006Z CONFIG_TARGET_qualcommbe_ipq95xx_DEVICE_jiorouter_ax6000-jidu6j11-6111=y
+2026-10-21T21:13:54.8793418Z # CONFIG_TARGET_qualcommbe_ipq95xx_DEVICE_jiorouter_ax6000-jidu6j11-6411 is not set
+2026-10-21T21:13:54.8793834Z # CONFIG_TARGET_qualcommbe_ipq95xx_DEVICE_jiorouter_ax6000-jidu6j11-6611 is not set
+2026-10-21T21:13:54.8794230Z # CONFIG_TARGET_qualcommbe_ipq95xx_DEVICE_jiorouter_ax6000-jidu6j11-6811 is not set
+2026-10-21T21:13:54.8794626Z # CONFIG_TARGET_qualcommbe_ipq95xx_DEVICE_jiorouter_ax6000-jidu6j11-6911 is not set
+2026-10-21T21:13:54.8794969Z CONFIG_TARGET_ROOTFS_INITRAMFS=y
+2026-10-21T21:13:54.8795192Z # CONFIG_TARGET_ROOTFS_CPIOGZ is not set
+2026-10-21T21:13:54.8795424Z # CONFIG_TARGET_ROOTFS_TARGZ is not set
+2026-10-21T21:13:54.8795657Z # CONFIG_TARGET_ROOTFS_EROFS is not set
+2026-10-21T21:13:54.8795879Z # CONFIG_TARGET_ROOTFS_EXT4FS is not set
+2026-10-21T21:13:54.8796095Z CONFIG_TARGET_ROOTFS_SQUASHFS=y
+2026-10-21T21:13:54.8796326Z # CONFIG_TARGET_ROOTFS_PERSIST_VAR is not set
+2026-10-21T21:13:54.8796574Z CONFIG_TARGET_ROOTFS_DIR=""
+2026-10-21T21:13:54.8799404Z --- asserting the selected profile ---
+2026-10-21T21:13:54.8819379Z CONFIG_TARGET_PROFILE="DEVICE_jiorouter_ax6000-jidu6j11-6111"
+2026-10-21T21:13:54.8831264Z CONFIG_TARGET_qualcommbe_ipq95xx_DEVICE_jiorouter_ax6000-jidu6j11-6111=y
+2026-10-21T21:13:54.8831674Z CONFIG_TARGET_PROFILE="DEVICE_jiorouter_ax6000-jidu6j11-6111"

@@ -1,0 +1,27 @@
+﻿2026-10-21T21:12:09.9653038Z ##[group]Run set -e
+2026-10-21T21:12:09.9653270Z [36;1mset -e[0m
+2026-10-21T21:12:09.9653456Z [36;1msudo apt-get update -qq[0m
+2026-10-21T21:12:09.9653697Z [36;1msudo apt-get install -y -qq shellcheck[0m
+2026-10-21T21:12:09.9653947Z [36;1mecho "--- shellcheck ---"[0m
+2026-10-21T21:12:09.9654170Z [36;1m# shellcheck disable=SC1091[0m
+2026-10-21T21:12:09.9654395Z [36;1mshellcheck -s sh \[0m
+2026-10-21T21:12:09.9654605Z [36;1m  files/usr/bin/jidu-isp.sh \[0m
+2026-10-21T21:12:09.9654838Z [36;1m  files/usr/bin/jidu-identify.sh \[0m
+2026-10-21T21:12:09.9655081Z [36;1m  files/etc/init.d/jidu-bootguard \[0m
+2026-10-21T21:12:09.9655344Z [36;1m  files/etc/uci-defaults/99-jidu-first-boot[0m
+2026-10-21T21:12:09.9655595Z [36;1mecho "shellcheck: clean"[0m
+2026-10-21T21:12:09.9655812Z [36;1mecho "--- bash -n ---"[0m
+2026-10-21T21:12:09.9656100Z [36;1mfor f in files/usr/bin/jidu-isp.sh files/usr/bin/jidu-identify.sh \[0m
+2026-10-21T21:12:09.9656543Z [36;1m         files/etc/init.d/jidu-bootguard files/etc/uci-defaults/99-jidu-first-boot; do[0m
+2026-10-21T21:12:09.9656917Z [36;1m  bash -n "$f"[0m
+2026-10-21T21:12:09.9657108Z [36;1m  echo "ok  $f"[0m
+2026-10-21T21:12:09.9657292Z [36;1mdone[0m
+2026-10-21T21:12:09.9708874Z shell: /usr/bin/bash -e {0}
+2026-10-21T21:12:09.9709291Z ##[endgroup]
+2026-10-21T21:12:18.1153319Z --- shellcheck ---
+2026-10-21T21:12:18.7647442Z shellcheck: clean
+2026-10-21T21:12:18.7647844Z --- bash -n ---
+2026-10-21T21:12:18.7664849Z ok  files/usr/bin/jidu-isp.sh
+2026-10-21T21:12:18.7678898Z ok  files/usr/bin/jidu-identify.sh
+2026-10-21T21:12:18.7692287Z ok  files/etc/init.d/jidu-bootguard
+2026-10-21T21:12:18.7704794Z ok  files/etc/uci-defaults/99-jidu-first-boot
