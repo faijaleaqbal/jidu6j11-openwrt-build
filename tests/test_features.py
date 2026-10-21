@@ -626,6 +626,38 @@ def test_first_boot_defaults() -> None:
     check(g, "is idempotent (commits then exits)", body.count("uci commit") >= 2)
 
 
+def test_first_boot_runs_against_a_real_wireless_config() -> None:
+    g = "firstboot"
+    print(f"[{g}] applies to the radios that exist")
+    with tempfile.TemporaryDirectory() as tmp:
+        bindir = make_stub_dir(tmp)
+        state = os.path.join(tmp, "uci.state")
+        with open(state, "w", encoding="utf-8") as fh:
+            fh.write("network.lan.proto=static\n"
+                     "network.lan.ipaddr=192.168.1.1\n"
+                     "wireless.radio0=wifi-device\n"
+                     "wireless.radio0.path=platform/qca_ipq9574\n"
+                     "wireless.radio1=wifi-device\n"
+                     "wireless.radio1.path=platform/qca_qcn9074\n"
+                     "wireless.default_radio0=wifi-iface\n"
+                     "wireless.default_radio0.device=radio0\n"
+                     "wireless.default_radio1=wifi-iface\n"
+                     "wireless.default_radio1.device=radio1\n")
+        r = run_script("etc/uci-defaults/99-jidu-first-boot", [], tmp, bindir)
+        check(g, "exits 0", r.returncode == 0, r.stderr[:300])
+        st = read_state(state)
+        check(g, "radio0 gets country IN", st.get("wireless.radio0.country") == "IN", str(st))
+        check(g, "radio1 gets country IN", st.get("wireless.radio1.country") == "IN", str(st))
+        check(g, "the AP gets sae-mixed",
+              st.get("wireless.default_radio0.encryption") == "sae-mixed", str(st))
+        check(g, "the second AP gets sae-mixed",
+              st.get("wireless.default_radio1.encryption") == "sae-mixed", str(st))
+        check(g, "no phantom radio section was created",
+              not any(k.startswith("wireless.radio2") for k in st), str(st))
+        check(g, "the existing LAN address was left alone",
+              st.get("network.lan.ipaddr") == "192.168.1.1", str(st))
+
+
 def main() -> int:
     print(f"feature scripts: {FILES}\n")
     for fn in (
@@ -644,6 +676,7 @@ def main() -> int:
         test_bootguard_is_passive_without_env,
         test_bootguard_decision_tree,
         test_first_boot_defaults,
+        test_first_boot_runs_against_a_real_wireless_config,
     ):
         try:
             fn()

@@ -6,14 +6,17 @@
 # The stock radio config comes from the 6j11 BDF, which may carry a foreign
 # regulatory domain. India domain keeps the channel plan legal and the TX
 # power legal.
-RADIOS=$(uci show wireless 2>/dev/null | grep '=wifi-device' | cut -d. -f2 | cut -d= -f1)
-for radio in $RADIOS radio0 radio1; do
+#
+# Only touch radios that actually exist: `uci set wireless.radio2.country`
+# on a board with two radios would try to create a phantom section.
+RADIOS=$(uci show wireless 2>/dev/null | grep '=wifi-device$' | cut -d. -f2 | cut -d= -f1)
+for radio in $RADIOS; do
 	uci -q set "wireless.$radio.country='IN'" 2>/dev/null
 	uci -q set "wireless.$radio.disabled='0'" 2>/dev/null
 done
 
 # WPA2/WPA3 mixed so older clients (and IoT gear) still connect.
-IFACES=$(uci show wireless 2>/dev/null | grep '=wifi-iface' | cut -d. -f2 | cut -d= -f1)
+IFACES=$(uci show wireless 2>/dev/null | grep '=wifi-iface$' | cut -d. -f2 | cut -d= -f1)
 for iface in $IFACES; do
 	uci -q set "wireless.$iface.encryption='sae-mixed'" 2>/dev/null
 	uci -q set "wireless.$iface.ieee80211w='1'" 2>/dev/null
@@ -32,9 +35,10 @@ fi
 
 uci commit network
 
-# --- Drop the default password, force a real one -------------------------
-# The community image ships with no root password set at all. Leave a
-# marker instead of inventing a password the user does not know.
-touch /etc/config/jidu-first-boot-done
+# --- Mark that the first-boot defaults have been applied -----------------
+# The community image ships with no root password set at all. We do not
+# invent one the user does not know - we leave a marker so it is obvious
+# that a password still has to be set.
+touch /etc/jidu-first-boot-done
 
 exit 0
