@@ -104,14 +104,21 @@ pass=0; fail=0
 ok()   { echo "  ok   $1"; pass=$((pass+1)); }
 bad()  { echo "  FAIL $1"; fail=$((fail+1)); }
 check(){ if [ "$2" = "$3" ]; then ok "$1"; else bad "$1 (got '$2', want '$3')"; fi; }
+# has() - assert that a string contains a pattern
+has() {
+  case "$2" in
+    *"$3"*) ok "$1" ;;
+    *)      bad "$1 (missing '$3')" ;;
+  esac
+}
 
 echo "=== 1. identity report ==="
 OUT=$(sh "$FILES/usr/bin/jidu-identify.sh" 2>&1)
-echo "$OUT" | grep -q "JIDU6J11-6111"     && ok "model detected"   || bad "model detected"
-echo "$OUT" | grep -q "RAM: 500 MiB"      && ok "RAM reported"     || bad "RAM reported"
-echo "$OUT" | grep -q "board-2.bin"        && ok "BDF listed"       || bad "BDF listed"
-echo "$OUT" | grep -q "jidu_boot_attempts" && ok "boot counter"     || bad "boot counter"
-echo "$OUT" | grep -q "active slot: ubi"   && ok "active slot"      || bad "active slot"
+has "model detected" "$OUT" "JIDU6J11-6111"
+has "RAM reported" "$OUT" "RAM: 500 MiB"
+has "BDF listed" "$OUT" "board-2.bin"
+has "boot counter" "$OUT" "jidu_boot_attempts"
+has "active slot" "$OUT" "active slot: ubi"
 
 echo "=== 2. switch to a non-Jio ISP (PPPoE) ==="
 sh "$FILES/usr/bin/jidu-isp.sh" pppoe "myuser@isp" "mypass" >/dev/null
@@ -129,7 +136,7 @@ check "old username gone" "$(uci get network.wan.username 2>/dev/null || echo GO
 
 echo "=== 4. show output ==="
 OUT=$(sh "$FILES/usr/bin/jidu-isp.sh" show 2>&1)
-echo "$OUT" | grep -q "network.wan" && ok "show prints wan" || bad "show prints wan"
+has "show prints wan" "$OUT" "network.wan"
 
 echo "=== 5. boot guard: normal boot increments the counter ==="
 WG="$FILES/etc/init.d/jidu-bootguard"
@@ -150,7 +157,7 @@ sh -c ". '$WG'; start" >/dev/null 2>&1
 check "bootcmd rolled back" \
   "$(fw_printenv -n bootcmd)" \
   "ubi part rootfs_1; ubi read 0x46000000 kernel; bootm 0x46000000"
-[ -s "$REBOOT_LOG" ] && ok "reboot requested" || bad "reboot requested"
+if [ -s "$REBOOT_LOG" ]; then ok "reboot requested"; else bad "reboot requested"; fi
 
 echo
 echo "passed: $pass   failed: $fail"
