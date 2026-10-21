@@ -52,21 +52,38 @@ base_lan() {
 # ---- WAN: drop whatever the previous profile left behind -----------------
 reset_wan() {
 	for opt in proto username password ipaddr netmask gateway dns \
-	           peerdns defaultroute; do
+	           peerdns defaultroute keepalive; do
 		uci -q delete "network.wan.$opt" 2>/dev/null || true
 	done
 }
 
 # ---- firewall: WAN must be in the wan zone, with NAT ---------------------
+# Find the wan zone by NAME rather than assuming it is @zone[1]. The index
+# is not stable across configs - on this board the stock config has lan as
+# zone 0 and wan as zone 1, but a user who added or removed a zone would
+# otherwise get the wrong section rewritten.
+wan_zone() {
+	for i in $(uci show firewall 2>/dev/null \
+	           | grep '=zone$' | cut -d. -f2 | cut -d= -f1); do
+		if [ "$(uci -q get "firewall.$i.name" 2>/dev/null)" = "wan" ]; then
+			echo "$i"
+			return 0
+		fi
+	done
+	# No zone named wan - fall back to the second zone, which is where
+	# OpenWrt's stock config puts it.
+	echo "@zone[1]"
+}
+
 firewall_wan() {
-	# zone index 1 is the stock 'wan' zone on OpenWrt
-	uci -q set firewall.@zone[1].name='wan' 2>/dev/null || true
-	uci -q set firewall.@zone[1].network='wan' 2>/dev/null || true
-	uci -q set firewall.@zone[1].input='REJECT' 2>/dev/null || true
-	uci -q set firewall.@zone[1].output='ACCEPT' 2>/dev/null || true
-	uci -q set firewall.@zone[1].forward='REJECT' 2>/dev/null || true
-	uci -q set firewall.@zone[1].masq='1' 2>/dev/null || true
-	uci -q set firewall.@zone[1].mtu_fix='1' 2>/dev/null || true
+	z=$(wan_zone)
+	uci -q set "firewall.$z.name='wan'" 2>/dev/null || true
+	uci -q set "firewall.$z.network='wan'" 2>/dev/null || true
+	uci -q set "firewall.$z.input='REJECT'" 2>/dev/null || true
+	uci -q set "firewall.$z.output='ACCEPT'" 2>/dev/null || true
+	uci -q set "firewall.$z.forward='REJECT'" 2>/dev/null || true
+	uci -q set "firewall.$z.masq='1'" 2>/dev/null || true
+	uci -q set "firewall.$z.mtu_fix='1'" 2>/dev/null || true
 }
 
 # ---- Wi-Fi: WPA2/WPA3 mixed (older clients still connect), India domain --
@@ -140,7 +157,7 @@ case "$MODE" in
 		echo "--- network.wan ---"
 		uci show network.wan 2>/dev/null || true
 		echo "--- firewall wan zone ---"
-		uci show firewall 2>/dev/null | grep -E 'zone\[1\]|@zone\[1\]' | head -20 || true
+		uci show "firewall.$(wan_zone)" 2>/dev/null | head -20 || true
 		echo "--- wireless ---"
 		uci show wireless 2>/dev/null | grep -E 'encryption|country|ieee80211w' | head -20 || true
 		echo "--- live interfaces ---"

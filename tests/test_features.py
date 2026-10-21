@@ -68,14 +68,14 @@ cmd_delete() {
     # KEY is a full path like network.wan.username - match it exactly
     # as a prefix, so network.wan.proto and network.wan.protos are
     # distinguished correctly.
-    grep -v "^${KEY}=" "$STATE" > "$STATE.tmp" 2>/dev/null || true
+    grep -v -F "${KEY}=" "$STATE" > "$STATE.tmp" 2>/dev/null || true
     mv "$STATE.tmp" "$STATE"
     exit 0
 }
 
 cmd_get() {
     for a in "$@"; do KEY="$a"; done
-    v=$(grep "^${KEY}=" "$STATE" 2>/dev/null | tail -1 | cut -d= -f2-)
+    v=$(grep -F "${KEY}=" "$STATE" 2>/dev/null | tail -1 | cut -d= -f2-)
     [ -n "$v" ] || exit 1
     printf '%s\n' "$v"
     exit 0
@@ -84,11 +84,40 @@ cmd_get() {
 cmd_show() {
     sec=""
     for a in "$@"; do case "$a" in *=*) ;; *) sec="$a";; esac; done
+    # Real `uci show` prints a section header line before the section's
+    # keys, e.g.
+    #     firewall.@zone[0]=zone
+    #     firewall.@zone[0].name='lan'
+    # The script relies on that header to enumerate the zones, so the
+    # stub must produce it too.
     if [ -n "$sec" ]; then
-        grep "^${sec}\." "$STATE" 2>/dev/null || true
+        KEYS=$(grep -F "${sec}." "$STATE" 2>/dev/null || true)
     else
-        cat "$STATE" 2>/dev/null || true
+        KEYS=$(cat "$STATE" 2>/dev/null || true)
     fi
+    [ -n "$KEYS" ] || exit 0
+    printf '%s\n' "$KEYS" | awk -F. '
+        {
+            # rebuild the section path: everything up to the last dot
+            n = split($0, parts, ".")
+            sec = parts[1]
+            for (i = 2; i < n; i++) sec = sec "." parts[i]
+            # the type: "@zone[0]" -> "zone", "wan" -> "wan"
+            t = parts[n-1]
+            if (t ~ /^@/) { t = substr(t, 2); sub(/\[[0-9]+\]$/, "", t) }
+            else { t = t; sub(/\[[0-9]+\]$/, "", t) }
+            if (!(sec in seen)) { seen[sec] = 1; order[++c] = sec; types[sec] = t }
+            lines[++k] = $0
+        }
+        END {
+            for (j = 1; j <= c; j++) {
+                s = order[j]
+                print s "=" types[s]
+                for (i = 1; i <= k; i++) {
+                    if (index(lines[i], s ".") == 1) print lines[i]
+                }
+            }
+        }'
     exit 0
 }
 
@@ -274,6 +303,33 @@ def test_isp_bad_args() -> None:
         check(g, "static with too few args is rejected", r.returncode != 0, r.stdout[:200])
         r = run_script("usr/bin/jidu-isp.sh", ["bogus"], tmp, bindir)
         check(g, "unknown mode is rejected", r.returncode != 0, r.stdout[:200])
+
+
+def test_isp_finds_wan_zone_by_name() -> None:
+    g = "isp"
+    print(f"[{g}] wan firewall zone is found by name, not by index")
+    with tempfile.TemporaryDirectory() as tmp:
+        bindir = make_stub_dir(tmp)
+        # A config where the wan zone is NOT @zone[1] - e.g. a user added
+        # a zone before it. The script must find it by name.
+        state = os.path.join(tmp, "uci.state")
+        with open(state, "w", encoding="utf-8") as fh:
+            fh.write("firewall.@zone[0].name=lan\n"
+                     "firewall.@zone[0].network=lan\n"
+                     "firewall.@zone[1].name=guest\n"
+                     "firewall.@zone[1].network=guest\n"
+                     "firewall.@zone[2].name=wan\n"
+                     "firewall.@zone[2].network=wan\n"
+                     "firewall.@zone[2].masq=0\n")
+        r = run_script("usr/bin/jidu-isp.sh", ["dhcp"], tmp, bindir)
+        check(g, "exits 0", r.returncode == 0, r.stderr[:200])
+        st = read_state(state)
+        check(g, "the NAMED wan zone got the NAT rule",
+              st.get("firewall.@zone[2].masq") == "1", str(st))
+        check(g, "the guest zone was not touched",
+              "firewall.@zone[1].masq" not in st, str(st))
+        check(g, "the lan zone was not touched",
+              "firewall.@zone[0].masq" not in st, str(st))
 
 
 def test_isp_show() -> None:
@@ -578,6 +634,7 @@ def main() -> int:
         test_isp_custom_lan,
         test_isp_switching_resets_previous,
         test_isp_bad_args,
+        test_isp_finds_wan_zone_by_name,
         test_isp_show,
         test_identify,
         test_bootguard_counter,

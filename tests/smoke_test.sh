@@ -21,13 +21,27 @@ for a in "$@"; do case "$a" in -*) ;; *) args="$args|$a";; esac; done
 set -- $(printf '%s' "$args" | tr '|' ' ')
 case "${1:-}" in
   set)   shift; K=""; for a in "$@"; do K="$a"; done
-         printf '%s\n' "${K%%=*}=${K#*=}" >> "$STATE";;
+         V="${K#*=}"; V=$(printf '%s' "$V" | sed "s/^'//; s/'$//")
+         printf '%s\n' "${K%%=*}=$V" >> "$STATE";;
   delete) shift; for a in "$@"; do K="$a"; done
-         grep -v "^${K}=" "$STATE" > "$STATE.t" 2>/dev/null || true; mv "$STATE.t" "$STATE";;
+         grep -v -F "${K}=" "$STATE" > "$STATE.t" 2>/dev/null || true; mv "$STATE.t" "$STATE";;
   get)   shift; K=""; for a in "$@"; do K="$a"; done
          v=$(grep -F "${K}=" "$STATE" 2>/dev/null | tail -1 | cut -d= -f2-); [ -n "$v" ] || exit 1; echo "$v";;
   show)  shift; S=""; for a in "$@"; do S="$a"; done
-         if [ -n "$S" ]; then grep "^${S}\." "$STATE" 2>/dev/null || true; else cat "$STATE"; fi;;
+         if [ -n "$S" ]; then KEYS=$(grep -F "${S}." "$STATE" 2>/dev/null || true); else KEYS=$(cat "$STATE" 2>/dev/null || true); fi
+         [ -n "$KEYS" ] || exit 0
+         # Real `uci show` prints a section header before the section's
+         # keys, e.g. "firewall.@zone[0]=zone" then "firewall.@zone[0].name=lan".
+         # The script relies on that header to enumerate the zones.
+         printf '%s\n' "$KEYS" | awk -F. '
+           { n = split($0, parts, "."); sec = parts[1];
+             for (i = 2; i < n; i++) sec = sec "." parts[i];
+             t = parts[n-1]; if (t ~ /^@/) t = substr(t, 2);
+             sub(/\[[0-9]+\]$/, "", t);
+             if (!(sec in seen)) { seen[sec] = 1; order[++c] = sec; types[sec] = t }
+             lines[++k] = $0 }
+           END { for (j = 1; j <= c; j++) { s = order[j]; print s "=" types[s];
+                  for (i = 1; i <= k; i++) if (index(lines[i], s ".") == 1) print lines[i] } }';;
   commit) ;;
 esac
 EOF
@@ -104,6 +118,11 @@ pass=0; fail=0
 ok()   { echo "  ok   $1"; pass=$((pass+1)); }
 bad()  { echo "  FAIL $1"; fail=$((fail+1)); }
 check(){ if [ "$2" = "$3" ]; then ok "$1"; else bad "$1 (got '$2', want '$3')"; fi; }
+# The `uci get` output has a trailing newline; compare without it.
+get(){
+  v=$(uci get "$1" 2>/dev/null) || return 1
+  printf '%s' "$v"
+}
 # has() - assert that a string contains a pattern
 has() {
   case "$2" in
@@ -122,17 +141,21 @@ has "active slot" "$OUT" "active slot: ubi"
 
 echo "=== 2. switch to a non-Jio ISP (PPPoE) ==="
 sh "$FILES/usr/bin/jidu-isp.sh" pppoe "myuser@isp" "mypass" >/dev/null
-check "wan proto"    "$(uci get network.wan.proto)"    "pppoe"
-check "wan username" "$(uci get network.wan.username)" "myuser@isp"
-check "wan password" "$(uci get network.wan.password)" "mypass"
-check "firewall nat" "$(uci get firewall.@zone[1].masq)" "1"
+check "wan proto"    "$(get network.wan.proto)"    "pppoe"
+check "wan username" "$(get network.wan.username)" "myuser@isp"
+check "wan password" "$(get network.wan.password)" "mypass"
+check "firewall nat" "$(get firewall.@zone[1].masq)" "1"
 
 echo "=== 3. switch to a static IP ==="
 sh "$FILES/usr/bin/jidu-isp.sh" static 203.0.113.10 255.255.255.0 203.0.113.1 8.8.8.8 >/dev/null
-check "static proto"  "$(uci get network.wan.proto)"    "static"
-check "static ip"     "$(uci get network.wan.ipaddr)"   "203.0.113.10"
-check "static gw"     "$(uci get network.wan.gateway)"  "203.0.113.1"
-check "old username gone" "$(uci get network.wan.username 2>/dev/null || echo GONE)" "GONE"
+check "static proto"  "$(get network.wan.proto)"    "static"
+check "static ip"     "$(get network.wan.ipaddr)"   "203.0.113.10"
+check "static gw"     "$(get network.wan.gateway)"  "203.0.113.1"
+if grep -qF "network.wan.username=" "$FAKE_UCI_STATE"; then
+  bad "old username gone"
+else
+  ok "old username gone"
+fi
 
 echo "=== 4. show output ==="
 OUT=$(sh "$FILES/usr/bin/jidu-isp.sh" show 2>&1)
