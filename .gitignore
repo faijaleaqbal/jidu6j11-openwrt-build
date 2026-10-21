@@ -8,3 +8,5 @@ base-artifacts/
 base-artifacts.zip
 rootfs-check/
 rootfs.tar
+rel-logs/
+rel-logs.zip
