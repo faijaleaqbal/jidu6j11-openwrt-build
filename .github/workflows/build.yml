@@ -57,13 +57,26 @@ jobs:
             's|^PKG_MIRROR_HASH:=.*|PKG_MIRROR_HASH:=skip|' \
             package/firmware/ipq-wifi/Makefile
 
-          # 2. Make sure the initramfs FIT image is emitted. Route A (SSH)
-          #    needs <profile>-initramfs-uImage.itb to wrap into a factory UBI.
-          if ! grep -q 'squashfs-initramfs-uImage.itb' target/linux/qualcommbe/image/ipq95xx.mk; then
-            sed -i \
-              '/^\tDEVICE_PACKAGES := \\\\$/i\    IMAGES += squashfs-initramfs-uImage.itb' \
-              target/linux/qualcommbe/image/ipq95xx.mk
+          # 2. Verify the patch actually landed. A sed that does not match is a
+          #    silent no-op, and the BDF would then be missing while the build
+          #    still reports success.
+          if ! grep -q 'Sandiep/firmware_qca-wireless' package/firmware/ipq-wifi/Makefile; then
+            echo "FATAL: ipq-wifi PKG_SOURCE_URL patch did not apply."
+            grep -n 'PKG_SOURCE_URL\|PKG_SOURCE_VERSION\|PKG_MIRROR_HASH' package/firmware/ipq-wifi/Makefile
+            exit 1
           fi
+          if ! grep -q 'a8974a05d1c6bc571a34f7e4ef858bc4689c402b' package/firmware/ipq-wifi/Makefile; then
+            echo "FATAL: ipq-wifi PKG_SOURCE_VERSION patch did not apply."
+            exit 1
+          fi
+          echo "[+] ipq-wifi repointed to the JIDU BDF fork"
+
+          # NOTE: no IMAGES tweak is needed for the initramfs FIT. OpenWrt
+          # generates <profile>-initramfs-uImage.itb automatically from
+          # Device/Build/initramfs whenever CONFIG_TARGET_ROOTFS_INITRAMFS=y
+          # (include/image.mk). Adding an explicit
+          # "IMAGES += squashfs-initramfs-uImage.itb" would additionally emit a
+          # SQUASHFS-rootfs-in-RAM variant, which is the wrong image for route A.
 
           # 3. Show what we changed
           git --no-pager diff --stat
@@ -124,6 +137,21 @@ jobs:
           echo "--- resolved device ---"
           grep -E 'CONFIG_TARGET_qualcommbe|CONFIG_TARGET_ROOTFS' .config | head -20
 
+          # HARD ASSERT. An unknown/typo'd Kconfig symbol is silently dropped by
+          # defconfig, and the build then defaults to the FIRST device in
+          # TARGET_DEVICES (8devices_kiwi-dvk) -- a successful build of the
+          # wrong board. Fail loudly instead.
+          echo "--- asserting the selected profile ---"
+          if ! grep -q '^CONFIG_TARGET_PROFILE="DEVICE_jiorouter_ax6000-jidu6j11-6111"$' .config; then
+            echo "FATAL: the 6111 device was not selected."
+            echo "  CONFIG_TARGET_PROFILE = $(grep '^CONFIG_TARGET_PROFILE=' .config)"
+            echo "  available profiles:"
+            grep -oE 'DEVICE_[a-z0-9_-]+' .config | sort -u | head -20
+            exit 1
+          fi
+          grep '^CONFIG_TARGET_PROFILE=' .config
+          grep 'DEVICE_jiorouter_ax6000-jidu6j11-6111' .config
+
       - name: Build firmware
         working-directory: openwrt
         run: |
@@ -139,13 +167,35 @@ jobs:
           OUT=bin/targets/qualcommbe/ipq95xx
           cd "$OUT"
 
-          ITB=$(ls *initramfs-uImage.itb 2>/dev/null | head -1)
-          if [ -z "$ITB" ]; then
-            echo "ERROR: no *initramfs-uImage.itb produced"
+          # The initramfs FIT (kernel + RAM rootfs) is what route A boots. It is
+          # generated automatically by Device/Build/initramfs whenever
+          # CONFIG_TARGET_ROOTFS_INITRAMFS=y -- no IMAGES tweak needed.
+          #
+          # NOTE: do NOT glob loosely here. A profile can also emit a
+          # "<fs>-initramfs-uImage.itb" variant (squashfs rootfs in RAM), and
+          # "head -1" over a loose glob can pick that one instead -- it would
+          # build a factory UBI around the wrong rootfs. Match exactly.
+          ITB="openwrt-qualcommbe-ipq95xx-jiorouter_ax6000-jidu6j11-6111-initramfs-uImage.itb"
+          if [ ! -f "$ITB" ]; then
+            echo "ERROR: expected initramfs FIT not found: $ITB"
+            echo "--- what IS in the output dir ---"
             ls -la
             exit 1
           fi
           echo "[+] initramfs FIT: $ITB"
+
+          # END-TO-END ASSERT: the device tree compiled INTO this image must
+          # name the 6111 profile. This proves the build targeted the right
+          # board, not just that the build exited 0.
+          if ! grep -aq 'jiorouter,ax6000-jidu6j11-6111' "$ITB"; then
+            echo "FATAL: the built image does not contain the 6111 compatible string."
+            echo "--- compatible strings actually present ---"
+            strings "$ITB" | grep -ao 'jiorouter,[a-z0-9-]*' | sort -u | head
+            strings "$ITB" | grep -ao 'qcom,ipq[0-9]*' | sort -u | head
+            exit 1
+          fi
+          echo "[+] OK: image contains compatible jiorouter,ax6000-jidu6j11-6111"
+          strings "$ITB" | grep -ao 'jiorouter,[a-z0-9,-]*' | sort -u | head
 
           # The Mayank SSH method boots the initramfs from a UBI container
           # with a single 'kernel' volume. Geometry must match the NAND:
@@ -174,15 +224,21 @@ jobs:
           mkdir -p "$STAGE"
 
           # Canonical names the community flasher expects.
-          for f in *initramfs-uImage.itb; do
-            [ -e "$f" ] || continue
-            cp "$f" "$STAGE/openwrt-qualcommbe-ipq95xx-jiorouter_ax6000-jidu6j11-initramfs-uImage.itb"
+          # Match the 6111 profile exactly -- a loose glob could pick up a
+          # different profile's image if more than one device were built.
+          ITB="openwrt-qualcommbe-ipq95xx-jiorouter_ax6000-jidu6j11-6111-initramfs-uImage.itb"
+          SYS="openwrt-qualcommbe-ipq95xx-jiorouter_ax6000-jidu6j11-6111-squashfs-sysupgrade.bin"
+          for f in "$ITB" "$SYS"; do
+            if [ ! -f "$f" ]; then
+              echo "FATAL: expected artifact missing: $f"
+              ls -la
+              exit 1
+            fi
           done
+
+          cp "$ITB" "$STAGE/openwrt-qualcommbe-ipq95xx-jiorouter_ax6000-jidu6j11-initramfs-uImage.itb"
+          cp "$SYS" "$STAGE/openwrt-qualcommbe-ipq95xx-jiorouter_ax6000-jidu6j11-squashfs-sysupgrade.bin"
           cp factory-initramfs.ubi "$STAGE/openwrt-qualcommbe-ipq95xx-jiorouter_ax6000-jidu6j11-initramfs-factory.ubi"
-          for f in *squashfs-sysupgrade.bin; do
-            [ -e "$f" ] || continue
-            cp "$f" "$STAGE/openwrt-qualcommbe-ipq95xx-jiorouter_ax6000-jidu6j11-squashfs-sysupgrade.bin"
-          done
           # keep the raw build outputs too
           cp -a . "$STAGE/raw/" 2>/dev/null || true
           ls -la "$STAGE"
