@@ -133,6 +133,29 @@ have not already backed up.
 The initramfs runs entirely from RAM. If it fails, **nothing was
 overwritten** and the stock firmware still boots.
 
+It is also **required**, not just safer: the `jiorouter_initial_setup()`
+function in `platform.sh` only runs when `rootfs_type` is `tmpfs` — i.e.
+from the initramfs. That function is what writes the U-Boot environment
+the squashfs image later boots from:
+
+```
+mtdids  = nand0=nand0
+mtdparts = mtdparts=nand0:0xe100000@0x1700000(ubi)
+bootcmd  = ubi part ubi; ubi read 0x44000000 kernel; bootm 0x44000000
+bootargs = console=ttyMSM0,115200n8 ubi.mtd=ubi root=/dev/ubiblock0_1 rootfstype=squashfs
+```
+
+It needs a partition named **`0:APPSBLENV`** to exist. If it does not, the
+upgrade aborts with:
+
+```
+unable to find mtd partition 0:APPSBLENV
+```
+
+If you see that, your unit's partition table does not match what this
+branch expects — **stop** and compare `/proc/mtd` against the values
+above before writing anything.
+
 1. Put `openwrt-qualcommbe-ipq95xx-jiorouter_ax6000-jidu6j11-initramfs-uImage.itb`
    on a TFTP server reachable from the router.
 2. From the router's shell, load and boot it. Use the `Sandiep/openwrt`

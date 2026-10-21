@@ -119,9 +119,20 @@ build asks for a *different* Wi-Fi calibration blob than the generic build.
 
 | | Community v1.0.0 (`JIDU6J11` branch) | This build (`JIDU6J11-PR` branch) |
 |---|---|---|
-| `platform.sh` | no `jiorouter_initial_setup`; `CI_UBIPART="firmware"` | `jiorouter_initial_setup` runs from the initramfs: writes `/etc/fw_env.config` for `0:APPSBLENV`, then `fw_setenv mtdparts 'mtdparts=nand0:0xe100000@0x1700000(ubi)'`, `bootcmd 'ubi part ubi; ubi read 0x44000000 kernel; bootm 0x44000000'`, `bootargs 'console=ttyMSM0,115200n8 ubi.mtd=ubi root=/dev/ubiblock0_1 rootfstype=squashfs'` |
+| `platform.sh` | no `jiorouter_initial_setup`; `CI_UBIPART="firmware"` | `jiorouter_initial_setup` runs from the initramfs: writes `/etc/fw_env.config` for `0:APPSBLENV`, then `fw_setenv mtdids 'nand0=nand0'`, `fw_setenv mtdparts 'mtdparts=nand0:0xe100000@0x1700000(ubi)'`, `bootcmd 'ubi part ubi; ubi read 0x44000000 kernel; bootm 0x44000000'`, `bootargs 'console=ttyMSM0,115200n8 ubi.mtd=ubi root=/dev/ubiblock0_1 rootfstype=squashfs'` |
 | Kernel load address | `0x46000000` | `0x44000000` (permanent), `0x46000000` (initramfs) |
 | Post-sysupgrade layout | `firmware` partition | single `ubi` partition, `0xe100000` @ `0x1700000` |
+
+> `jiorouter_initial_setup` only runs when `rootfs_type` is `tmpfs` — i.e.
+> **from the initramfs**, which is exactly why the initramfs is the correct
+> first flash. It is the step that lays down the U-Boot environment the
+> squashfs image then boots from.
+>
+> It also **fails hard** if it cannot find the `0:APPSBLENV` partition
+> (`find_mtd_index 0:APPSBLENV`): "unable to find mtd partition
+> 0:APPSBLENV" and it returns 1, so the upgrade aborts. If you see that,
+> your unit's partition table does not match what this branch expects —
+> stop and check `/proc/mtd` before continuing.
 
 **Consequence:** the sysupgrade half of the flash is *not* the community
 procedure. After stage 1 boots the initramfs, the `platform.sh` on this
