@@ -404,12 +404,16 @@ docs/HARDWARE-VERIFICATION.md the checklist to run on the actual router
 ### Verifying a published build yourself
 
 ```sh
-sh verify_release.sh <run-id>
+sh verify_release.sh              # verify the published release
+sh verify_release.sh <run-id>     # also report on a specific CI run
 ```
 
-It downloads the run's artifacts, prints the step results and the release
-assets, then runs the acceptance tests, the feature tests and the smoke
-test against the downloaded files.
+It downloads the release assets, verifies them with `sha256sum -c`, then
+runs the acceptance tests, the feature tests and the smoke test against the
+downloaded files. **No GitHub token is needed** — the release is public. Set
+`GITHUB_TOKEN` only if you also want the per-step CI detail for a run id.
+
+Tested on Windows (git-bash) and on Linux.
 
 ---
 
