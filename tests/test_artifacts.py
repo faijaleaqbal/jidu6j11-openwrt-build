@@ -442,11 +442,21 @@ def test_manifest() -> None:
         lines.append(f"{h}  {name}")
         check(g, f"{name} sha256 computed", len(h) == 64)
     if lines:
-        print("  sha256sums.txt:")
+        print("sha256sums.txt:")
         for line in lines:
             print("   ", line)
-        with open(os.path.join(ART, "sha256sums.txt"), "w", encoding="utf-8") as fh:
+        # LF explicitly: this file is meant to be consumed by
+        # "sha256sum -c" on the router (Linux). The platform default on
+        # Windows is CRLF, which makes every line fail to match.
+        with open(os.path.join(ART, "sha256sums.txt"), "w",
+                  encoding="utf-8", newline="\n") as fh:
             fh.write("\n".join(lines) + "\n")
+        # and prove it
+        raw = open(os.path.join(ART, "sha256sums.txt"), "rb").read()
+        check(g, "sha256sums.txt uses LF line endings", b"\r" not in raw,
+              repr(raw[:80]))
+        check(g, "sha256sums.txt has one line per artifact",
+              raw.count(b"\n") == len(lines), f"{raw.count(chr(10).encode())} vs {len(lines)}")
 
 
 def main() -> int:
