@@ -30,6 +30,45 @@ ROOT = os.path.dirname(HERE)
 FILES = os.path.join(ROOT, "files")
 
 results: list[tuple[str, str, str]] = []
+SHELL = shutil.which("sh") or "sh"
+
+
+def shell_path(path: str) -> str:
+    """Translate a Windows path before handing it to a POSIX-shell test stub."""
+    if os.name != "nt":
+        return path
+    cygpath = shutil.which("cygpath")
+    if not cygpath:
+        return path
+    result = subprocess.run([cygpath, "-u", path], capture_output=True,
+                            text=True, check=False)
+    return result.stdout.strip() if result.returncode == 0 else path
+
+
+def shell_environment(env: dict[str, str]) -> dict[str, str]:
+    """Keep temporary filesystem variables valid inside Git Bash on Windows."""
+    return {
+        key: shell_path(value)
+        if key.startswith(("FAKE_", "JIDU_", "REBOOT_")) and os.path.isabs(value)
+        else value
+        for key, value in env.items()
+    }
+
+
+def shell_path_list(path: str) -> str:
+    """Use the separator expected by the POSIX shell, not the host OS."""
+    if os.name != "nt":
+        return path
+    return ":".join(shell_path(item) for item in path.split(os.pathsep) if item)
+
+
+def test_shell_environment(bindir: str, extra: dict[str, str] | None = None) -> dict[str, str]:
+    """Build an environment whose PATH works both for Python and Git Bash."""
+    env = dict(os.environ)
+    env["PATH"] = shell_path(bindir) + ":" + shell_path_list(env.get("PATH", ""))
+    if extra:
+        env.update(extra)
+    return shell_environment(env)
 
 
 def check(group: str, name: str, ok: bool, detail: str = "") -> bool:
@@ -215,15 +254,15 @@ def read_state(path: str) -> dict[str, str]:
 
 def run_script(script: str, args: list[str], tmp: str, bindir: str,
                env_extra: dict[str, str] | None = None):
-    env = dict(os.environ)
-    env["PATH"] = bindir + os.pathsep + env.get("PATH", "")
+    env = test_shell_environment(bindir)
     env["FAKE_UCI_STATE"] = os.path.join(tmp, "uci.state")
     env["FAKE_FW_STATE"] = os.path.join(tmp, "fw.state")
     env["FAKE_UCI_KEY"] = ""
     if env_extra:
         env.update(env_extra)
+    env = shell_environment(env)
     return subprocess.run(
-        ["sh", os.path.join(FILES, script)] + args,
+        [SHELL, shell_path(os.path.join(FILES, script))] + args,
         capture_output=True, text=True, env=env, timeout=60,
     )
 
@@ -350,11 +389,22 @@ def test_isp_show() -> None:
     print(f"[{g}] show")
     with tempfile.TemporaryDirectory() as tmp:
         bindir = make_stub_dir(tmp)
-        run_script("usr/bin/jidu-isp.sh", ["pppoe", "u", "p"], tmp, bindir)
-        r = run_script("usr/bin/jidu-isp.sh", ["show"], tmp, bindir)
+        sysroot = os.path.join(tmp, "sys", "class", "net")
+        os.makedirs(os.path.join(sysroot, "br-lan"), exist_ok=True)
+        os.makedirs(os.path.join(sysroot, "wan"), exist_ok=True)
+        for iface, state, carrier in (("br-lan", "up", "1"), ("wan", "down", "0")):
+            with open(os.path.join(sysroot, iface, "operstate"), "w", encoding="utf-8") as fh:
+                fh.write(state + "\n")
+            with open(os.path.join(sysroot, iface, "carrier"), "w", encoding="utf-8") as fh:
+                fh.write(carrier + "\n")
+        env = {"JIDU_SYS": os.path.join(tmp, "sys")}
+        run_script("usr/bin/jidu-isp.sh", ["pppoe", "u", "p"], tmp, bindir, env)
+        r = run_script("usr/bin/jidu-isp.sh", ["show"], tmp, bindir, env)
         check(g, "show exits 0", r.returncode == 0, r.stderr[:300])
         check(g, "show prints the wan section", "network.wan" in r.stdout, r.stdout[:300])
         check(g, "show prints live interfaces", "live interfaces" in r.stdout, r.stdout[-300:])
+        check(g, "show reads the injected sysfs tree", "wan        state=down carrier=0" in r.stdout,
+              r.stdout[-300:])
 
 
 def test_identify() -> None:

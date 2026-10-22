@@ -21,6 +21,7 @@ shift 2>/dev/null || true
 
 LAN_IP="${LAN_IP:-192.168.1.1}"
 LAN_MASK="${LAN_MASK:-255.255.255.0}"
+SYS="${JIDU_SYS:-/sys}"
 
 # Which physical port is WAN depends on the board. On the 6j11 the DSA switch
 # exposes lan1..lan4 and a separate wan; the OpenWrt network config already
@@ -161,8 +162,8 @@ case "$MODE" in
 		echo "--- wireless ---"
 		uci show wireless 2>/dev/null | grep -E 'encryption|country|ieee80211w' | head -20 || true
 		echo "--- live interfaces ---"
-		if [ -d /sys/class/net ]; then
-			for d in /sys/class/net/*; do
+		if [ -d "$SYS/class/net" ]; then
+			for d in "$SYS"/class/net/*; do
 				[ -e "$d" ] || continue
 				n=${d##*/}
 				[ "$n" = "lo" ] && continue
@@ -171,7 +172,7 @@ case "$MODE" in
 					"$(cat "$d/carrier" 2>/dev/null)"
 			done
 		fi
-		if [ -e "/sys/class/net/$LAN_DEV" ]; then
+		if [ -e "$SYS/class/net/$LAN_DEV" ]; then
 			echo "  LAN bridge $LAN_DEV is present"
 		else
 			echo "  WARNING: LAN bridge $LAN_DEV not found"
