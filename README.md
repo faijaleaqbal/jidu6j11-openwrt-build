@@ -396,8 +396,20 @@ files/etc/init.d/jidu-bootguard  automatic boot-failure rollback
 files/etc/uci-defaults/99-jidu-first-boot  first-boot defaults
 tests/test_artifacts.py       artifact acceptance tests (FIT/FDT/UBI/tar parsers)
 tests/test_features.py        feature tests (mocked OpenWrt environment)
+tests/smoke_test.sh           end-to-end smoke test (simulated first boot)
+verify_release.sh             download a run's artifacts and verify them locally
 docs/HARDWARE-VERIFICATION.md the checklist to run on the actual router
 ```
+
+### Verifying a published build yourself
+
+```sh
+sh verify_release.sh <run-id>
+```
+
+It downloads the run's artifacts, prints the step results and the release
+assets, then runs the acceptance tests, the feature tests and the smoke
+test against the downloaded files.
 
 ---
 
