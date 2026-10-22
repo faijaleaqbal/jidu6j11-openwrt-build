@@ -1,28 +1,45 @@
 #!/bin/sh
 # Download the release artifacts and run the full verification locally.
 #
-# Usage: sh verify_release.sh <run-id>
+#   sh verify_release.sh              -> verify the published release (v1.0.0)
+#   sh verify_release.sh <run-id>     -> also report on a specific CI run
+#
+# The release is public, so no GitHub token is needed. If GITHUB_TOKEN is
+# set (or /tmp/gcred.txt exists) it is used for the extra CI-run details.
 set -e
 
-RUN="${1:?usage: verify_release.sh <run-id>}"
 HERE="$(cd "$(dirname "$0")" && pwd)"
 cd "$HERE"
 
-TOK=$(awk -F= '/^password=/{print $2}' /tmp/gcred.txt)
-API="https://api.github.com/repos/faijaleaqbal/jidu6j11-openwrt-build"
+REPO="faijaleaqbal/jidu6j11-openwrt-build"
+TAG="${TAG:-v1.0.0}"
+RUN="${1:-}"
+API="https://api.github.com/repos/$REPO"
+DL="https://github.com/$REPO/releases/download/$TAG"
 
-echo "=== run $RUN ==="
-curl -s -H "Authorization: Bearer $TOK" "$API/actions/runs/$RUN" | python -c "
+TOK="${GITHUB_TOKEN:-}"
+if [ -z "$TOK" ] && [ -f /tmp/gcred.txt ]; then
+	TOK=$(awk -F= '/^password=/{print $2}' /tmp/gcred.txt)
+fi
+if [ -n "$TOK" ]; then
+	AUTH="Authorization: Bearer $TOK"
+else
+	AUTH="X-No-Auth: 1"
+fi
+
+echo "=== release $TAG ==="
+if [ -n "$RUN" ]; then
+	curl -s -H "$AUTH" "$API/actions/runs/$RUN" | python -c "
 import sys,json
 d=json.load(sys.stdin)
+print('run     :', d['id'])
 print('status  :', d['status'], d.get('conclusion'))
 print('commit  :', d['head_sha'])
 print('url     :', d['html_url'])
 "
-
-echo
-echo "=== steps ==="
-curl -s -H "Authorization: Bearer $TOK" "$API/actions/runs/$RUN/jobs" | python -c "
+	echo
+	echo "=== steps ==="
+	curl -s -H "$AUTH" "$API/actions/runs/$RUN/jobs" | python -c "
 import sys,json
 for j in json.load(sys.stdin).get('jobs',[]):
     for s in j.get('steps',[]):
@@ -33,42 +50,64 @@ for j in json.load(sys.stdin).get('jobs',[]):
                          'Upload artifacts','Publish release'):
             print(f\"  {str(s.get('conclusion')):10s} {s['name']}\")
 "
-
-echo
-echo "=== release assets ==="
-curl -s -H "Authorization: Bearer $TOK" "$API/releases" | python -c "
-import sys,json
-for r in json.load(sys.stdin):
-    print('tag:', r['tag_name'], '|', r['name'])
-    for a in r.get('assets', []):
-        print(f\"   {a['name']:70s} {a['size']:>10d} B\")
-"
-
-echo
-echo "=== downloading artifacts ==="
-AID=$(curl -s -H "Authorization: Bearer $TOK" "$API/actions/runs/$RUN/artifacts" | python -c "
-import sys,json
-a=json.load(sys.stdin).get('artifacts',[])
-print(a[0]['id'] if a else '')
-")
-if [ -z "$AID" ]; then
-  echo "no artifacts uploaded for this run"
-  exit 1
+	echo
 fi
-rm -rf release-artifacts release-artifacts.zip
-mkdir -p release-artifacts
-curl -sL -H "Authorization: Bearer $TOK" "$API/actions/artifacts/$AID/zip" -o release-artifacts.zip
-python3 -c "
-import zipfile
-z=zipfile.ZipFile('release-artifacts.zip')
-z.extractall('release-artifacts')
-print('extracted', len(z.namelist()), 'entries')
+
+echo "=== published assets ==="
+curl -s -H "$AUTH" "$API/releases/tags/$TAG" | python -c "
+import sys,json
+r=json.load(sys.stdin)
+print('published:', r.get('published_at'))
+for a in r.get('assets',[]):
+    print(f\"   {a['name']:70s} {a['size']:>10d} B\")
 "
-ls -la release-artifacts/ | head -20
+
+echo
+echo "=== downloading the release assets ==="
+rm -rf release-artifacts
+mkdir -p release-artifacts
+
+# Resolve the asset names from the API instead of hardcoding them, so a
+# rename upstream can never silently skip a file here.
+curl -s -H "$AUTH" "$API/releases/tags/$TAG" | python -c "
+import sys,json
+r=json.load(sys.stdin)
+for a in r.get('assets',[]):
+    sys.stdout.write(a['name'] + '\n')
+" > .asset-names
+
+while IFS= read -r f; do
+	# Python's print() emits CRLF on Windows, so a trailing CR survives the
+	# read and turns the URL into garbage (curl exit 3, "URL malformat").
+	# Strip it before using the name.
+	f=$(printf '%s' "$f" | tr -d '\r')
+	[ -n "$f" ] || continue
+	if curl -sfL "$DL/$f" -o "release-artifacts/$f"; then
+		echo "  got $f"
+	else
+		echo "  WARNING: could not download $f" >&2
+		rm -f "release-artifacts/$f"
+	fi
+done < .asset-names
+rm -f .asset-names
+ls -la release-artifacts/
+
+echo
+echo "=== checksum verification (sha256sum -c) ==="
+if [ -f release-artifacts/sha256sums.txt ]; then
+	( cd release-artifacts && sha256sum -c sha256sums.txt )
+else
+	echo "sha256sums.txt missing" >&2
+	exit 1
+fi
 
 echo
 echo "=== artifact acceptance tests ==="
-ARTIFACT_DIR="$HERE/release-artifacts" python3 tests/test_artifacts.py
+# Relative to $HERE on purpose: the script has already cd'ed there, and a
+# relative path is the only form that both a native Windows Python and a
+# Linux one resolve identically. Passing an MSYS-style absolute path
+# ("/d/hermes/...") makes a native Windows Python build "D:\d\hermes\...".
+ARTIFACT_DIR="release-artifacts" python3 tests/test_artifacts.py
 
 echo
 echo "=== feature tests ==="
