@@ -32,8 +32,28 @@ import sys
 import tarfile
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-ART = os.environ.get("ARTIFACT_DIR") or os.path.join(HERE, "..", "artifacts")
-ART = os.path.abspath(ART)
+ROOT = os.path.dirname(HERE)
+
+
+def _find_artifact_dir() -> str:
+    """Locate the directory holding the built artifacts.
+
+    Order: an explicit ARTIFACT_DIR, then the CI staging directory
+    (openwrt/artifacts), then a plain ./artifacts. The CI workflow stages
+    into openwrt/artifacts, so that has to be tried before ./artifacts.
+    """
+    env = os.environ.get("ARTIFACT_DIR")
+    if env:
+        return os.path.abspath(env)
+    for cand in (os.path.join(ROOT, "openwrt", "artifacts"),
+                 os.path.join(ROOT, "artifacts"),
+                 os.path.join(ROOT, "release-artifacts")):
+        if os.path.isdir(cand):
+            return os.path.abspath(cand)
+    return os.path.abspath(os.path.join(ROOT, "artifacts"))
+
+
+ART = _find_artifact_dir()
 
 ITB = "openwrt-qualcommbe-ipq95xx-jiorouter_ax6000-jidu6j11-initramfs-uImage.itb"
 FACTORY = "openwrt-qualcommbe-ipq95xx-jiorouter_ax6000-jidu6j11-initramfs-factory.ubi"

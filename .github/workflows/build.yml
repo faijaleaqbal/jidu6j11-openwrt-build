@@ -394,7 +394,10 @@ jobs:
       - name: Acceptance tests (user point of view)
         run: |
           set -e
-          python3 tests/test_artifacts.py
+          # The artifacts are staged into openwrt/artifacts by the
+          # "Collect and name artifacts" step.
+          ARTIFACT_DIR="$GITHUB_WORKSPACE/openwrt/artifacts" \
+            python3 tests/test_artifacts.py
         working-directory: .
 
       - name: Upload artifacts
