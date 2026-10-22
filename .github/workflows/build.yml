@@ -318,73 +318,76 @@ jobs:
           echo "root member: $MEMBER"
           tar xf "$SYSUP" --force-local -O "$MEMBER" > rootfs.squashfs
           ls -la rootfs.squashfs
-          # unsquashfs cannot create device nodes (it/dev/console) without
-          # root, and it aborts the whole extraction when it hits one.
-          # The LISTING is enough to assert what we care about - the path,
-          # the mode and the size - and it needs no privileges at all.
-          # A privileged extract is still attempted so the tree can be
-          # listed and eyeballed.
-          echo "--- privileged extract (best effort) ---"
-          sudo unsquashfs -d extracted rootfs.squashfs >/dev/null 2>&1 || true
+          # unsquashfs needs root to create device nodes (/dev/console),
+          # so run it under sudo. The extracted tree is then directly
+          # checkable with test -s / test -x.
+          echo "--- privileged extract ---"
+          sudo unsquashfs -d extracted rootfs.squashfs >/dev/null 2>&1 || {
+            echo "FATAL: unsquashfs failed"
+            exit 1
+          }
+          echo "--- Wi-Fi board data ---"
           ls -la extracted/lib/firmware/ath11k/IPQ9574/hw1.0/ 2>/dev/null || true
           ls -la extracted/lib/firmware/ath11k/QCN9074/hw1.0/ 2>/dev/null || true
+          echo "--- feature scripts ---"
           ls -la extracted/usr/bin/jidu-isp.sh \
                  extracted/usr/bin/jidu-identify.sh \
                  extracted/etc/init.d/jidu-bootguard \
                  extracted/etc/uci-defaults/99-jidu-first-boot 2>/dev/null || true
 
-          echo "--- assertions (from the unsquashfs listing) ---"
-          unsquashfs -ll rootfs.squashfs > listing.txt 2>/dev/null || {
-            echo "FATAL: could not list the squashfs"
-            exit 1
-          }
-          echo "listing entries: $(wc -l < listing.txt)"
-          head -3 listing.txt
-
+          echo "--- assertions ---"
           fail=0
 
-          # check_listing <path> <want-executable:yes|no>
-          # A listing line ends with the path, e.g.
-          #   -rwxr-xr-x root/root  4664 2026-10-21 23:26 usr/bin/jidu-isp.sh
-          # The size is the first all-digits field after the mode and the
-          # owner, which avoids depending on an exact field count.
-          check_listing() {
-            _path="$1"
-            _want_x="$2"
-            _line=$(awk -v p="$_path" '
-                { f = $NF; sub(/^\.\//, "", f); if (f == p) { print; exit } }
-            ' listing.txt)
-            if [ -z "$_line" ]; then
-              echo "FATAL: not in the rootfs: $_path"
-              fail=1
-              return
-            fi
-            _size=$(echo "$_line" | awk '{
-                for (i = 3; i <= NF - 2; i++) if ($i ~ /^[0-9]+$/) { print $i; exit }
-            }')
-            if [ -z "$_size" ] || [ "$_size" -le 0 ] 2>/dev/null; then
-              echo "FATAL: present but empty or unparsable: $_path"
-              fail=1
-              return
-            fi
-            if [ "$_want_x" = "yes" ]; then
-              case "$_line" in
-                -*x*) ;;
-                *) echo "FATAL: not executable: $_path"; fail=1; return;;
-              esac
-            fi
-            echo "ok  $_path ($_size bytes)"
-          }
-
           # The BDF for this board MUST be present and non-empty.
-          check_listing lib/firmware/ath11k/IPQ9574/hw1.0/board-2.bin no
-          check_listing lib/firmware/ath11k/QCN9074/hw1.0/board-2.bin no
+          for f in extracted/lib/firmware/ath11k/IPQ9574/hw1.0/board-2.bin \
+                   extracted/lib/firmware/ath11k/QCN9074/hw1.0/board-2.bin; do
+            if [ ! -s "$f" ]; then
+              echo "FATAL: Wi-Fi board data missing or empty: $f"
+              fail=1
+            else
+              echo "ok  $f ($(stat -c %s "$f") bytes)"
+            fi
+          done
 
-          # The feature scripts MUST be installed, non-empty and executable.
-          check_listing usr/bin/jidu-isp.sh yes
-          check_listing usr/bin/jidu-identify.sh yes
-          check_listing etc/init.d/jidu-bootguard yes
-          check_listing etc/uci-defaults/99-jidu-first-boot yes
+          # The feature scripts MUST be installed and executable.
+          for f in extracted/usr/bin/jidu-isp.sh \
+                   extracted/usr/bin/jidu-identify.sh \
+                   extracted/etc/init.d/jidu-bootguard \
+                   extracted/etc/uci-defaults/99-jidu-first-boot; do
+            if [ ! -f "$f" ]; then
+              echo "FATAL: feature file missing: $f"
+              fail=1
+            elif [ ! -x "$f" ]; then
+              echo "FATAL: feature file not executable: $f"
+              fail=1
+            else
+              echo "ok  $f ($(stat -c %s "$f") bytes)"
+            fi
+          done
+
+          # Cross-check with the listing. Note the paths in the listing are
+          # prefixed with the root directory name ("squashfs-root/..."), so
+          # match on the path SUFFIX, as a plain string comparison.
+          unsquashfs -ll rootfs.squashfs > listing.txt 2>/dev/null || true
+          for p in lib/firmware/ath11k/IPQ9574/hw1.0/board-2.bin \
+                   lib/firmware/ath11k/QCN9074/hw1.0/board-2.bin \
+                   usr/bin/jidu-isp.sh \
+                   usr/bin/jidu-identify.sh \
+                   etc/init.d/jidu-bootguard \
+                   etc/uci-defaults/99-jidu-first-boot; do
+            if awk -v p="$p" '
+                { f = $NF; sub(/^\.\//, "", f)
+                  if (f == p) { found = 1; exit }
+                  if (length(f) > length(p) &&
+                      substr(f, length(f) - length(p)) == "/" p) { found = 1; exit } }
+                END { exit found ? 0 : 1 }
+            ' listing.txt; then
+              echo "ok  listed: $p"
+            else
+              echo "FATAL: not in the listing: $p"
+              fail=1
+            fi
+          done
 
           exit $fail
 
