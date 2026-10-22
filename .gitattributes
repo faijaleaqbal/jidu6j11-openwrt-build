@@ -6,3 +6,4 @@ files/** text eol=lf
 tests/*.py text eol=lf
 *.yml text eol=lf
 *.md text eol=lf
+release-manifest.sha256 text eol=lf

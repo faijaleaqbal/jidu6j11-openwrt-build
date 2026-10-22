@@ -1,4 +1,5 @@
 artifacts/
+release-artifacts/
 openwrt/
 *.bin
 *.ubi
